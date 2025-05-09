@@ -12,13 +12,15 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
+    "@privy-io/react-auth": "^2.13.1",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "next": "15.3.2",
     "pg": "^8.15.6",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "viem": "^2.29.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
