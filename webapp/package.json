@@ -11,12 +11,15 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.2",
+    "@heroicons/react": "^2.2.0",
     "@neondatabase/serverless": "^1.0.0",
     "@privy-io/react-auth": "^2.13.1",
     "@privy-io/wagmi": "^1.0.3",
     "@tanstack/react-query": "^5.75.7",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
+    "minidenticons": "^4.2.1",
     "next": "15.3.2",
     "pg": "^8.15.6",
     "postgres": "^3.4.5",
