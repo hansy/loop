@@ -16,6 +16,7 @@ This document outlines the directory structure and the purpose of each key folde
 - `tsconfig.json`: TypeScript compiler configuration.
 - `webapp-README.md`: High-level overview, setup instructions, and general architectural notes specifically for the `webapp` component. Linked from the main project README.
 - `ARCHITECTURE_AND_CODE_ORGANIZATION.md`: This file – detailed guide to code structure.
+- `env.example`: List of environment variables used in the app.
 
 ## `src/` Directory
 
