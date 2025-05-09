@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Before starting any feature, make sure you reference [WEBAPP_ARCHITECTURE_AND_CODE_ORGANIZATION.md](mdc:docs/WEBAPP_ARCHITECTURE_AND_CODE_ORGANIZATION.md) to understaand where code should go. Confirm with user; if new directories or files need to be created, confirm with user.
