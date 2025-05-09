@@ -11,6 +11,7 @@ import {
   MenuItems,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 import Avatar from "@/components/ui/Avatar";
@@ -18,7 +19,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAccount } from "wagmi";
 import { truncateString } from "@/lib/common/utils/truncateString";
 
-const navigation = [{ name: "Library", href: "/", current: true }];
+const navigation = [{ name: "Library", href: "/" }];
 
 interface BaseUserNavigationItem {
   name: string;
@@ -43,14 +44,11 @@ type UserNavigationItem =
   | UserNavigationAction
   | UserNavigationDisplay;
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
 export default function Navbar() {
   const { isAuthenticated, login, logout, isAuthenticating } = useAuth();
   const { address: walletAddress, isConnected: isWalletConnected } =
     useAccount();
+  const pathname = usePathname();
 
   const userNavigation = React.useMemo(() => {
     const items: UserNavigationItem[] = [];
@@ -92,21 +90,23 @@ export default function Navbar() {
             </div>
             <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
               {isAuthenticated &&
-                navigation.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    aria-current={item.current ? "page" : undefined}
-                    className={classNames(
-                      item.current
-                        ? "bg-gray-900 text-white"
-                        : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                      "rounded-md px-3 py-2 text-sm font-medium"
-                    )}
-                  >
-                    {item.name}
-                  </a>
-                ))}
+                navigation.map((item) => {
+                  const isCurrent = item.href === pathname;
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      aria-current={isCurrent ? "page" : undefined}
+                      className={`${
+                        isCurrent
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                      } rounded-md px-3 py-2 text-sm font-medium`}
+                    >
+                      {item.name}
+                    </a>
+                  );
+                })}
             </div>
           </div>
           <div className="flex items-center">
@@ -147,10 +147,9 @@ export default function Navbar() {
                             return (
                               <button
                                 onClick={item.action}
-                                className={classNames(
-                                  active && !disabled ? "bg-gray-100" : "",
-                                  "block w-full text-left px-4 py-2 text-sm text-gray-700"
-                                )}
+                                className={`${
+                                  active && !disabled ? "bg-gray-100" : ""
+                                } block w-full text-left px-4 py-2 text-sm text-gray-700`}
                               >
                                 {item.name}
                               </button>
@@ -159,10 +158,9 @@ export default function Navbar() {
                             return (
                               <a
                                 href={item.href}
-                                className={classNames(
-                                  active && !disabled ? "bg-gray-100" : "",
-                                  "block px-4 py-2 text-sm text-gray-700"
-                                )}
+                                className={`${
+                                  active && !disabled ? "bg-gray-100" : ""
+                                } block px-4 py-2 text-sm text-gray-700`}
                               >
                                 {item.name}
                               </a>
@@ -190,22 +188,24 @@ export default function Navbar() {
         {isAuthenticated ? (
           <>
             <div className="space-y-1 px-2 pt-2 pb-3 sm:px-3">
-              {navigation.map((item) => (
-                <DisclosureButton
-                  key={item.name}
-                  as="a"
-                  href={item.href}
-                  aria-current={item.current ? "page" : undefined}
-                  className={classNames(
-                    item.current
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                    "block rounded-md px-3 py-2 text-base font-medium"
-                  )}
-                >
-                  {item.name}
-                </DisclosureButton>
-              ))}
+              {navigation.map((item) => {
+                const isCurrent = item.href === pathname;
+                return (
+                  <DisclosureButton
+                    key={item.name}
+                    as="a"
+                    href={item.href}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={`${
+                      isCurrent
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    } block rounded-md px-3 py-2 text-base font-medium`}
+                  >
+                    {item.name}
+                  </DisclosureButton>
+                );
+              })}
             </div>
             <div className="border-t border-gray-700 pt-4 pb-3">
               <div className="flex items-center px-5 sm:px-6">
@@ -225,33 +225,29 @@ export default function Navbar() {
               </div>
               <div className="mt-3 space-y-1 px-2 sm:px-3">
                 {userNavigation
-                  .filter((item) => item.type !== "display")
-                  .map((item) => {
-                    if (item.type === "action") {
+                  .filter((navItem) => navItem.type !== "display")
+                  .map((navItem) => {
+                    if (navItem.type === "action") {
                       return (
                         <DisclosureButton
-                          key={item.name}
+                          key={navItem.name}
                           as="button"
-                          onClick={item.action}
+                          onClick={navItem.action}
                           className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
                         >
-                          {item.name}
+                          {navItem.name}
                         </DisclosureButton>
                       );
                     }
-                    // Assuming any other type must be 'link' for mobile,
-                    // as 'display' is filtered out.
+                    const linkItem = navItem as UserNavigationLink;
                     return (
                       <DisclosureButton
-                        key={item.name}
+                        key={linkItem.name}
                         as="a"
-                        // We need to assert item is UserNavigationLink here if TS complains
-                        // or adjust the filtering/mapping logic.
-                        // For now, assuming if not 'action', it's 'link'.
-                        href={(item as UserNavigationLink).href}
+                        href={linkItem.href}
                         className="block rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-700 hover:text-white"
                       >
-                        {item.name}
+                        {linkItem.name}
                       </DisclosureButton>
                     );
                   })}
