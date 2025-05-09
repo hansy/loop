@@ -6,6 +6,8 @@
     "contracts"
   ],
   "scripts": {
-    "dev": "yarn workspace webapp dev"
+    "dev": "yarn workspace webapp dev",
+    "db:generate": "yarn workspace webapp db:generate",
+    "db:migrate": "yarn workspace webapp db:migrate"
   }
 }
