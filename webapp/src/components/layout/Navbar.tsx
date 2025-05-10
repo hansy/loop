@@ -19,7 +19,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAccount } from "wagmi";
 import { truncateString } from "@/lib/common/utils/truncateString";
 
-const navigation = [{ name: "Library", href: "/" }];
+const navigation = [{ name: "Library", href: "/library" }];
 
 interface BaseUserNavigationItem {
   name: string;

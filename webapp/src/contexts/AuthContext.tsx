@@ -17,6 +17,7 @@ import {
   PrivyErrorCode,
 } from "@privy-io/react-auth";
 import { createUser } from "@/services/userApiService";
+import { useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: User | null;
@@ -35,13 +36,13 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const { ready, authenticated, user } = usePrivy();
   const [isBackendRegistered, setIsBackendRegistered] = useState(false);
+  const router = useRouter();
   const { login } = useLogin({
     onComplete: async () => {
       await registerUserWithBackend();
     },
     onError: (error: PrivyErrorCode) => {
       console.error("Privy login error:", error);
-
       setIsBackendRegistered(false);
     },
   });
@@ -49,10 +50,10 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const logout = useCallback(async () => {
     if (privyLogout) {
       setIsBackendRegistered(false);
-
       await privyLogout();
+      router.push("/");
     }
-  }, [privyLogout]);
+  }, [privyLogout, router]);
   const isAuthenticated = useMemo(
     () => ready && authenticated && isBackendRegistered,
     [ready, authenticated, isBackendRegistered]
@@ -76,8 +77,8 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const registerUserWithBackend = async () => {
     try {
       await createUser();
-
       setIsBackendRegistered(true);
+      router.push("/library");
     } catch (error) {
       console.error(
         "AuthContext: Failed to register user with backend. Logging out.",
