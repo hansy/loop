@@ -9,9 +9,5 @@
     "dev": "yarn workspace webapp dev",
     "db:generate": "yarn workspace webapp db:generate",
     "db:migrate": "yarn workspace webapp db:migrate"
-  },
-  "dependencies": {
-    "minidenticons": "^4.2.1",
-    "viem": "^2.29.1"
   }
 }

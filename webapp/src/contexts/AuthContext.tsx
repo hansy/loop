@@ -8,9 +8,17 @@ import React, {
   ReactElement,
   useEffect,
 } from "react";
-import { usePrivy, useLogin, useLogout, User } from "@privy-io/react-auth";
+import {
+  usePrivy,
+  useLogin,
+  useLogout,
+  User,
+  PrivyErrorCode,
+} from "@privy-io/react-auth";
 import { useChainId, useSwitchChain } from "wagmi";
 import { DEFAULT_CHAIN } from "@/config/chainConfig";
+import { apiPost } from "@/lib/client/apiClient";
+import type { ClientApiError } from "@/lib/client/apiClient";
 
 interface AuthContextType {
   user: User | null;
@@ -28,7 +36,21 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const { ready, authenticated, user } = usePrivy();
-  const { login } = useLogin();
+
+  const { login } = useLogin({
+    onComplete: async (loginData: { user: User; isNewUser: boolean }) => {
+      const { user: privyUser, isNewUser } = loginData;
+      console.log(
+        `Privy login complete. User DID: ${privyUser.id}, Is new Privy user: ${isNewUser}. Attempting to sync with DB.`
+      );
+
+      await createUser();
+    },
+    onError: (error: PrivyErrorCode) => {
+      console.error("Privy login error:", error);
+    },
+  });
+
   const { logout } = useLogout();
   const currentChainId = useChainId();
   const {
@@ -49,8 +71,33 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     [ready, chainSwitchStatus]
   );
 
+  const createUser = async () => {
+    try {
+      interface ApiUsersResponse {
+        userId: string;
+        did: string;
+      }
+
+      const data = await apiPost<ApiUsersResponse>("/api/users");
+      console.log("Successfully called /api/users:", data);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(
+          "Error calling /api/users endpoint:",
+          (error as ClientApiError).message,
+          (error as ClientApiError).statusCode,
+          (error as ClientApiError).serverError
+        );
+      } else {
+        console.error(
+          "An unexpected error occurred while calling /api/users:",
+          error
+        );
+      }
+    }
+  };
+
   useEffect(() => {
-    // Attempt to switch chain if conditions are met
     if (
       ready &&
       authenticated &&
@@ -58,7 +105,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       typeof currentChainId === "number"
     ) {
       if (!isCorrectChain) {
-        // Only attempt to switch if no switch operation is currently in progress ('idle').
         if (chainSwitchStatus === "idle") {
           console.log(
             `Wallet connected to chain ID ${currentChainId}, attempting to switch to ${DEFAULT_CHAIN.name} (ID: ${DEFAULT_CHAIN.id})`
@@ -76,15 +122,12 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     isCorrectChain,
   ]);
 
-  // Effect to handle the outcome of chain switching (success/error)
   useEffect(() => {
     if (chainSwitchStatus === "error" && switchChainError) {
       console.error(
         `Failed to switch to network ${DEFAULT_CHAIN.name}. Error: ${switchChainError.message}. Logging out user.`
       );
-      logout(); // Logout user if chain switch fails
-    } else if (chainSwitchStatus === "success") {
-      console.log(`Successfully switched to network ${DEFAULT_CHAIN.name}.`);
+      logout();
     }
   }, [chainSwitchStatus, switchChainError, logout]);
 

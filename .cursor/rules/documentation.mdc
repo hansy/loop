@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+High-level docs are placed in the root level /docs directory. There are design and architectural patterns here that may be specific to the app that will be useful during implementation.
