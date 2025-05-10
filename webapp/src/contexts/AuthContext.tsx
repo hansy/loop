@@ -44,18 +44,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const router = useRouter();
   const { login } = useLogin({
     onComplete: async () => {
-      const toastId = showLoadingToast("Setting up your account...");
-      try {
-        await registerUserWithBackend();
-        updateToast(toastId, "Successfully logged in!", "success");
-      } catch (err) {
-        console.error("Failed to set up account:", err);
-        updateToast(
-          toastId,
-          "Failed to set up account. Please try again.",
-          "error"
-        );
-      }
+      await registerUserWithBackend();
     },
     onError: (error: PrivyErrorCode) => {
       console.error("Privy login error:", error);
@@ -105,8 +94,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
       if (data.newUser) {
         router.refresh();
-      } else {
-        router.push("/library");
       }
     } catch (error) {
       console.error(
