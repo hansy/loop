@@ -76,9 +76,14 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
 
   const registerUserWithBackend = async () => {
     try {
-      await createUser();
+      const data = await createUser();
       setIsBackendRegistered(true);
-      router.push("/library");
+
+      if (data.newUser) {
+        router.refresh();
+      } else {
+        router.push("/library");
+      }
     } catch (error) {
       console.error(
         "AuthContext: Failed to register user with backend. Logging out.",

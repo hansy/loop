@@ -4,13 +4,7 @@ import { apiPost } from "../lib/client/apiClient"; // Adjusted import path
  * Defines the expected structure of the response from the POST /api/users endpoint.
  */
 export interface UserCreateResponse {
-  message: string;
-  existingUser: boolean;
-  user: {
-    id: string; // This is the Privy DID
-    // Potentially other user details returned by your API might be added here
-  };
-  // Add any other fields your /api/users endpoint might return on success
+  newUser: boolean;
 }
 
 /**

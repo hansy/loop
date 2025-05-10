@@ -3,7 +3,7 @@ import { createUser } from "@/lib/server/data/userService";
 import { AppError } from "@/lib/server/AppError";
 import { successResponse } from "@/lib/server/apiUtils";
 import { User as PrivyUserType } from "@privy-io/server-auth";
-
+import { setPrivyUserCustomMetadata } from "@/lib/server/privy";
 /**
  * POST /api/users
  *
@@ -18,6 +18,10 @@ export const POST = handleApiRoute(
       throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
     }
 
+    if (privyUser.customMetadata.appUserId) {
+      return successResponse({ newUser: false }, 200);
+    }
+
     const email = privyUser.email?.address || privyUser.google?.email;
 
     // Construct user input from Privy user data
@@ -29,8 +33,12 @@ export const POST = handleApiRoute(
     };
 
     try {
-      const newUser = await createUser(userInput);
-      return successResponse(newUser, 201);
+      await createUser(userInput);
+      await setPrivyUserCustomMetadata(privyUser, {
+        appUserId: userInput.id,
+      });
+
+      return successResponse({ newUser: true }, 201);
     } catch (error) {
       // Check if the error is a user already exists error
       if (
@@ -38,7 +46,7 @@ export const POST = handleApiRoute(
         error.errorCode === "USER_ALREADY_EXISTS"
       ) {
         // User already exists, return 200 OK
-        return successResponse({}, 200);
+        return successResponse({ newUser: false }, 200);
       }
       // Re-throw other errors to be handled by handleApiRoute
       throw error;

@@ -95,3 +95,19 @@ export async function getVerifiedPrivyUserFromCookies(
     );
   }
 }
+
+export const setPrivyUserCustomMetadata = async (
+  privyUser: User,
+  customMetadata: Record<string, string | number | boolean>
+) => {
+  try {
+    await privyClient?.setCustomMetadata(privyUser.id, customMetadata);
+  } catch (error) {
+    throw new AppError(
+      "Failed to update user custom metadata.",
+      500,
+      "PRIVY_UPDATE_USER_CUSTOM_METADATA_FAILED",
+      { originalError: error }
+    );
+  }
+};
