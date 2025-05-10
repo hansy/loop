@@ -4,5 +4,6 @@
  */
 
 export * from "./user";
+export * from "./video";
 // Future table types can be exported from here as well
 // e.g., export * from './products';
