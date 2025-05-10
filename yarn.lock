@@ -2960,7 +2960,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:^8.8.0":
+"@types/pg@npm:^8.15.1, @types/pg@npm:^8.8.0":
   version: 8.15.1
   resolution: "@types/pg@npm:8.15.1"
   dependencies:
@@ -10590,6 +10590,7 @@ __metadata:
     "@tailwindcss/postcss": "npm:^4"
     "@tanstack/react-query": "npm:^5.75.7"
     "@types/node": "npm:^20"
+    "@types/pg": "npm:^8.15.1"
     "@types/react": "npm:^19"
     "@types/react-dom": "npm:^19"
     dotenv: "npm:^16.5.0"
@@ -10608,6 +10609,7 @@ __metadata:
     uuid: "npm:^11.1.0"
     viem: "npm:^2.29.1"
     wagmi: "npm:^2.15.2"
+    zod: "npm:^3.24.4"
   languageName: unknown
   linkType: soft
 
@@ -10948,7 +10950,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.23.8, zod@npm:^3.24.2, zod@npm:^3.24.3":
+"zod@npm:^3.23.8, zod@npm:^3.24.2, zod@npm:^3.24.3, zod@npm:^3.24.4":
   version: 3.24.4
   resolution: "zod@npm:3.24.4"
   checksum: 10c0/ab3112f017562180a41a0f83d870b333677f7d6b77f106696c56894567051b91154714a088149d8387a4f50806a2520efcb666f108cd384a35c236a191186d91

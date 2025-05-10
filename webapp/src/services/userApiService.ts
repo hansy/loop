@@ -1,0 +1,26 @@
+import { apiPost } from "../lib/client/apiClient"; // Adjusted import path
+
+/**
+ * Defines the expected structure of the response from the POST /api/users endpoint.
+ */
+export interface UserCreateResponse {
+  message: string;
+  existingUser: boolean;
+  user: {
+    id: string; // This is the Privy DID
+    // Potentially other user details returned by your API might be added here
+  };
+  // Add any other fields your /api/users endpoint might return on success
+}
+
+/**
+ * Calls the backend API to create a new user.
+ *
+ * @returns {Promise<UserCreateResponse>} A promise that resolves with the user sync response.
+ * @throws {ClientApiError} If the API call fails (handled by apiClient).
+ */
+export async function createUser(): Promise<UserCreateResponse> {
+  // The /api/users endpoint currently doesn't expect a body for this POST request.
+  // If it did, we would pass it as the second argument to apiPost.
+  return apiPost<UserCreateResponse>("/api/users", {});
+}

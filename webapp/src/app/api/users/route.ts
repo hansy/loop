@@ -1,52 +1,47 @@
-import { NextRequest } from "next/server";
-import { User } from "@privy-io/server-auth";
-import { v7 as uuidv7 } from "uuid";
-import { handleApiRoute, successResponse } from "@/lib/server/apiUtils";
+import { handleApiRoute } from "@/lib/server/apiUtils";
+import { createUser } from "@/lib/server/data/userService";
 import { AppError } from "@/lib/server/AppError";
+import { successResponse } from "@/lib/server/apiUtils";
+import { User as PrivyUserType } from "@privy-io/server-auth";
 
 /**
- * Handles POST requests to create a new user or sync an existing one.
- * Authentication is handled by `handleApiRoute`.
+ * POST /api/users
  *
- * Checks if an `internalUserId` is already set in Privy user's custom metadata.
- * If yes, returns existing user data.
- * If no, generates a new `internalUserId`, (simulates DB save), sets it in Privy custom metadata,
- * and then returns the new user data.
+ * Creates a new user in the database if one doesn't exist for the authenticated Privy user.
+ * If a user already exists (based on Privy DID or wallet address), returns 200 OK.
+ *
+ * @returns {Promise<Response>} 201 Created for new users, 200 OK for existing users, or an error response.
  */
-async function postHandler(req: NextRequest, privyUser: User | null) {
-  if (!privyUser) {
-    throw new AppError(
-      "Authenticated user not available in handler.",
-      401,
-      "AUTH_USER_UNAVAILABLE"
-    );
-  }
+export const POST = handleApiRoute(
+  async (req, privyUser: PrivyUserType | null) => {
+    if (!privyUser) {
+      throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
+    }
 
-  // New user: Generate internal ID, (simulate DB save), then set metadata
-  const internalUserId = uuidv7();
-  const walletAddress = privyUser.wallet?.address || null;
-  const email = privyUser.email?.address || privyUser.google?.email || null;
+    const email = privyUser.email?.address || privyUser.google?.email;
 
-  // --- BEGIN Placeholder for Database Interaction ---
-  console.log("New user registration: Data for database save:", {
-    internalUserId,
-    did: privyUser.id,
-    walletAddress,
-    email,
-    // Consider saving linkedAccounts details as well
-    // linkedAccounts: privyUser.linkedAccounts.map(acc => ({ ... })),
-  });
-  // --- END Placeholder for Database Interaction ---
-
-  return successResponse(
-    {
-      userId: internalUserId,
+    // Construct user input from Privy user data
+    const userInput = {
+      id: crypto.randomUUID(), // Generate a UUID for the user ID
       did: privyUser.id,
-      existingUser: false,
-    },
-    201, // 201 Created for new user
-    "User successfully created and registered."
-  );
-}
+      walletAddress: privyUser.wallet?.address || "",
+      emailAddress: email,
+    };
 
-export const POST = handleApiRoute(postHandler);
+    try {
+      const newUser = await createUser(userInput);
+      return successResponse(newUser, 201);
+    } catch (error) {
+      // Check if the error is a user already exists error
+      if (
+        error instanceof AppError &&
+        error.errorCode === "USER_ALREADY_EXISTS"
+      ) {
+        // User already exists, return 200 OK
+        return successResponse({}, 200);
+      }
+      // Re-throw other errors to be handled by handleApiRoute
+      throw error;
+    }
+  }
+);

@@ -1,31 +1,25 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
+import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
 import { Pool as ServerlessPool } from "@neondatabase/serverless";
 import * as schema from "./schema";
+import { drizzle as drizzleNode } from "drizzle-orm/node-postgres";
+import { Pool as PgPool } from "pg";
+import { IS_PRODUCTION } from "@/lib/common/utils/env";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-/**
- * Database connection configuration
- *
- * Uses Neon serverless Postgres for both development and production.
- * The connection string is read from the DATABASE_URL environment variable.
- *
- * Note: This file should only be imported in server-side code.
- */
-const pool = new ServerlessPool({
-  connectionString: process.env.DATABASE_URL,
-});
+let db: NodePgDatabase<typeof schema>;
 
-/**
- * Drizzle ORM instance with our schema
- *
- * This is the main entry point for database operations.
- * Example usage:
- * ```
- * import { db } from "@/db";
- * const users = await db.select().from(schema.users);
- * ```
- *
- * Note: This should only be used in server-side code.
- */
-const db = drizzle(pool, { schema });
+if (IS_PRODUCTION) {
+  const pool = new ServerlessPool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  db = drizzleNeon(pool, { schema });
+} else {
+  const pool = new PgPool({
+    connectionString: process.env.DATABASE_URL,
+  });
+
+  db = drizzleNode({ client: pool, schema });
+}
 
 export { db };

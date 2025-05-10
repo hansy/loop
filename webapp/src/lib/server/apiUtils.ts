@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { User } from "@privy-io/server-auth";
 import { AppError } from "./AppError";
 import { getVerifiedPrivyUserFromCookies } from "./privy";
+import { IS_PRODUCTION } from "@/lib/common/utils/env";
 
 interface SuccessResponse<T> {
   success: true;
@@ -58,7 +59,7 @@ export function errorResponse(
       success: false,
       error: {
         message:
-          process.env.NODE_ENV === "production" && error.statusCode >= 500
+          IS_PRODUCTION && error.statusCode >= 500
             ? "Internal Server Error"
             : error.message,
         code: error.errorCode,
@@ -81,7 +82,7 @@ export function errorResponse(
       success: false,
       error: {
         message:
-          process.env.NODE_ENV === "production" && statusCode >= 500
+          IS_PRODUCTION && statusCode >= 500
             ? "Internal Server Error"
             : error.message,
       },
@@ -96,7 +97,7 @@ export function errorResponse(
       success: false,
       error: {
         message:
-          process.env.NODE_ENV === "production" && statusCode >= 500
+          IS_PRODUCTION && statusCode >= 500
             ? "Internal Server Error"
             : "An unexpected error occurred",
       },
@@ -105,11 +106,7 @@ export function errorResponse(
   }
 
   // Optionally add stack trace to response in non-production environments for easier debugging
-  if (
-    process.env.NODE_ENV !== "production" &&
-    error instanceof Error &&
-    responseBody.error
-  ) {
+  if (!IS_PRODUCTION && error instanceof Error && responseBody.error) {
     responseBody.error.stack = error.stack;
   }
 
@@ -146,7 +143,7 @@ export function handleApiRoute<
         // This function will throw an AppError if auth fails (e.g., token missing, invalid)
         privyUser = await getVerifiedPrivyUserFromCookies(await cookies());
       }
-      // Delegate to the original handler, passing the request, (potentially null) privyUser, and context
+      // Delegate to the original handler, passing the request, (potentially null) privyUse r, and context
       return await handler(req, privyUser, context);
     } catch (error) {
       // If auth fails (AppError from getVerifiedPrivyUserFromCookies) or handler throws an error,
