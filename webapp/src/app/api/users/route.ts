@@ -5,20 +5,16 @@ import { handleApiRoute, successResponse } from "@/lib/server/apiUtils";
 import { AppError } from "@/lib/server/AppError";
 
 /**
- * Handles POST requests to create a new user.
- * Authentication is handled by the `handleApiRoute` wrapper, which provides
- * the verified Privy User object.
+ * Handles POST requests to create a new user or sync an existing one.
+ * Authentication is handled by `handleApiRoute`.
  *
- * It extracts user information from the Privy User object, generates a unique
- * internal ID, and (currently) logs this information.
+ * Checks if an `internalUserId` is already set in Privy user's custom metadata.
+ * If yes, returns existing user data.
+ * If no, generates a new `internalUserId`, (simulates DB save), sets it in Privy custom metadata,
+ * and then returns the new user data.
  */
-async function postHandler(
-  req: NextRequest, // req is still available if needed for body, etc.
-  privyUser: User | null // privyUser is now passed by handleApiRoute
-) {
+async function postHandler(req: NextRequest, privyUser: User | null) {
   if (!privyUser) {
-    // This should ideally be caught by handleApiRoute if requireAuth is true (default)
-    // But as a safeguard or if requireAuth was explicitly false and we still expect a user here:
     throw new AppError(
       "Authenticated user not available in handler.",
       401,
@@ -26,36 +22,31 @@ async function postHandler(
     );
   }
 
+  // New user: Generate internal ID, (simulate DB save), then set metadata
+  const internalUserId = uuidv7();
   const walletAddress = privyUser.wallet?.address || null;
   const email = privyUser.email?.address || privyUser.google?.email || null;
-  const internalUserId = uuidv7();
 
-  // Placeholder for database interaction:
-  console.log(
-    "New user data for database (from /api/users route - standardized):",
-    {
-      internalUserId,
-      did: privyUser.id, // Use privyUser.id directly
-      walletAddress,
-      email,
-      linkedAccounts: privyUser.linkedAccounts.map((acc) => ({
-        type: acc.type,
-        address: acc.type === "wallet" ? acc.address : undefined,
-        email: acc.type === "email" ? acc.address : undefined,
-        subject: acc.type === "google_oauth" ? acc.subject : undefined,
-      })),
-    }
-  );
+  // --- BEGIN Placeholder for Database Interaction ---
+  console.log("New user registration: Data for database save:", {
+    internalUserId,
+    did: privyUser.id,
+    walletAddress,
+    email,
+    // Consider saving linkedAccounts details as well
+    // linkedAccounts: privyUser.linkedAccounts.map(acc => ({ ... })),
+  });
+  // --- END Placeholder for Database Interaction ---
 
   return successResponse(
     {
       userId: internalUserId,
       did: privyUser.id,
+      existingUser: false,
     },
-    200, // Or 201 if truly a new resource creation confirmed by DB
-    "User processing initiated successfully."
+    201, // 201 Created for new user
+    "User successfully created and registered."
   );
 }
 
-// Wrap the handler with handleApiRoute. It will require auth by default.
 export const POST = handleApiRoute(postHandler);

@@ -7,6 +7,8 @@ import React, {
   useMemo,
   ReactElement,
   useEffect,
+  useState,
+  useCallback,
 } from "react";
 import {
   usePrivy,
@@ -17,15 +19,26 @@ import {
 } from "@privy-io/react-auth";
 import { useChainId, useSwitchChain } from "wagmi";
 import { DEFAULT_CHAIN } from "@/config/chainConfig";
-import { apiPost } from "@/lib/client/apiClient";
+import { apiGet, apiPost } from "@/lib/client/apiClient";
 import type { ClientApiError } from "@/lib/client/apiClient";
+
+// Define interface for /api/auth/check-user response
+interface CheckUserResponse {
+  message: string;
+  privyDid: string;
+  customMetadata: Record<string, string | number | boolean | undefined>;
+  retrievedInternalUserId: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
   login: () => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
-  isAuthenticating: boolean; // True if Privy is loading OR chain switch is in progress
+  isAuthenticating: boolean;
+  isCorrectChain: boolean;
+  chainSwitchAttemptFailed: boolean;
+  retryChainSwitch: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,81 +49,102 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const { ready, authenticated, user } = usePrivy();
+  const [isBackendRegistered, setIsBackendRegistered] = useState(false);
+  const [chainSwitchAttemptFailed, setChainSwitchAttemptFailed] =
+    useState(false);
 
   const { login } = useLogin({
-    onComplete: async (loginData: { user: User; isNewUser: boolean }) => {
-      const { user: privyUser, isNewUser } = loginData;
-      console.log(
-        `Privy login complete. User DID: ${privyUser.id}, Is new Privy user: ${isNewUser}. Attempting to sync with DB.`
-      );
-
-      await createUser();
-    },
     onError: (error: PrivyErrorCode) => {
       console.error("Privy login error:", error);
+      setIsBackendRegistered(false);
+      setChainSwitchAttemptFailed(false);
     },
   });
 
-  const { logout } = useLogout();
+  const { logout: privyLogout } = useLogout();
   const currentChainId = useChainId();
   const {
     switchChain,
     status: chainSwitchStatus,
     error: switchChainError,
   } = useSwitchChain();
+
   const isCorrectChain = useMemo(
     () => currentChainId === DEFAULT_CHAIN.id,
     [currentChainId]
   );
-  const isAuthenticated = useMemo(
-    () => ready && authenticated && isCorrectChain,
-    [ready, authenticated, isCorrectChain]
-  );
-  const isAuthenticating = useMemo(
-    () => !ready || chainSwitchStatus === "pending",
-    [ready, chainSwitchStatus]
-  );
 
-  const createUser = async () => {
-    try {
-      interface ApiUsersResponse {
-        userId: string;
-        did: string;
-      }
+  const logout = useCallback(async () => {
+    await privyLogout();
+    setIsBackendRegistered(false);
+    setChainSwitchAttemptFailed(false);
+  }, [privyLogout]);
 
-      const data = await apiPost<ApiUsersResponse>("/api/users");
-      console.log("Successfully called /api/users:", data);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(
-          "Error calling /api/users endpoint:",
-          (error as ClientApiError).message,
-          (error as ClientApiError).statusCode,
-          (error as ClientApiError).serverError
+  useEffect(() => {
+    const registerUserWithBackend = async () => {
+      if (ready && authenticated && !isBackendRegistered) {
+        console.log(
+          "Privy authenticated. Attempting backend user registration/sync."
         );
-      } else {
-        console.error(
-          "An unexpected error occurred while calling /api/users:",
-          error
-        );
+        try {
+          interface ApiUsersResponse {
+            userId: string;
+            did: string;
+            existingUser?: boolean;
+          }
+          const registrationData = await apiPost<ApiUsersResponse>(
+            "/api/users"
+          );
+          console.log(
+            "Backend user registration/sync successful:",
+            registrationData
+          );
+          setIsBackendRegistered(true);
+        } catch (error) {
+          console.error(
+            "Backend user registration/sync failed:",
+            error instanceof Error ? (error as ClientApiError).message : error
+          );
+          if (error instanceof Error) {
+            const clientError = error as ClientApiError;
+            console.error(
+              "Details:",
+              clientError.statusCode,
+              clientError.serverError
+            );
+          }
+          await logout();
+        }
       }
+    };
+
+    registerUserWithBackend();
+  }, [ready, authenticated, isBackendRegistered, logout]);
+
+  const retryChainSwitch = useCallback(() => {
+    if (ready && authenticated && !isCorrectChain) {
+      console.log(
+        `Retrying chain switch to ${DEFAULT_CHAIN.name} (ID: ${DEFAULT_CHAIN.id})`
+      );
+      setChainSwitchAttemptFailed(false);
+      switchChain({ chainId: DEFAULT_CHAIN.id });
     }
-  };
+  }, [ready, authenticated, isCorrectChain, switchChain]);
 
   useEffect(() => {
     if (
       ready &&
       authenticated &&
       switchChain &&
-      typeof currentChainId === "number"
+      typeof currentChainId === "number" &&
+      !isCorrectChain
     ) {
-      if (!isCorrectChain) {
-        if (chainSwitchStatus === "idle") {
-          console.log(
-            `Wallet connected to chain ID ${currentChainId}, attempting to switch to ${DEFAULT_CHAIN.name} (ID: ${DEFAULT_CHAIN.id})`
-          );
-          switchChain({ chainId: DEFAULT_CHAIN.id });
-        }
+      if (chainSwitchStatus === "idle" || chainSwitchStatus === "success") {
+        console.log(
+          `Wallet connected to chain ID ${currentChainId}, attempting to switch to ${DEFAULT_CHAIN.name} (ID: ${DEFAULT_CHAIN.id})`
+        );
+        setChainSwitchAttemptFailed(false);
+        switchChain({ chainId: DEFAULT_CHAIN.id });
       }
     }
   }, [
@@ -125,11 +159,28 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   useEffect(() => {
     if (chainSwitchStatus === "error" && switchChainError) {
       console.error(
-        `Failed to switch to network ${DEFAULT_CHAIN.name}. Error: ${switchChainError.message}. Logging out user.`
+        `Failed to switch to network ${DEFAULT_CHAIN.name}. Error: ${switchChainError.message}`
       );
-      logout();
+      setChainSwitchAttemptFailed(true);
     }
-  }, [chainSwitchStatus, switchChainError, logout]);
+  }, [chainSwitchStatus, switchChainError]);
+
+  useEffect(() => {
+    if (!ready || !authenticated) {
+      setChainSwitchAttemptFailed(false);
+    }
+  }, [ready, authenticated]);
+
+  const isAuthenticated = useMemo(
+    () => ready && authenticated && isBackendRegistered,
+    [ready, authenticated, isBackendRegistered]
+  );
+
+  const isAuthenticating = useMemo(() => {
+    if (!ready) return true;
+    if (ready && authenticated && !isBackendRegistered) return true;
+    return false;
+  }, [ready, authenticated, isBackendRegistered]);
 
   const contextValue = useMemo(
     () => ({
@@ -138,8 +189,20 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       logout,
       isAuthenticated,
       isAuthenticating,
+      isCorrectChain,
+      chainSwitchAttemptFailed,
+      retryChainSwitch,
     }),
-    [user, login, logout, isAuthenticated, isAuthenticating]
+    [
+      user,
+      login,
+      logout,
+      isAuthenticated,
+      isAuthenticating,
+      isCorrectChain,
+      chainSwitchAttemptFailed,
+      retryChainSwitch,
+    ]
   );
 
   return (
