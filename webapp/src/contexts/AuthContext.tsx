@@ -18,6 +18,11 @@ import {
 } from "@privy-io/react-auth";
 import { createUser } from "@/services/userApiService";
 import { useRouter } from "next/navigation";
+import {
+  showErrorToast,
+  showLoadingToast,
+  updateToast,
+} from "@/lib/common/utils/toast";
 
 interface AuthContextType {
   user: User | null;
@@ -39,19 +44,38 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const router = useRouter();
   const { login } = useLogin({
     onComplete: async () => {
-      await registerUserWithBackend();
+      const toastId = showLoadingToast("Setting up your account...");
+      try {
+        await registerUserWithBackend();
+        updateToast(toastId, "Successfully logged in!", "success");
+      } catch (err) {
+        console.error("Failed to set up account:", err);
+        updateToast(
+          toastId,
+          "Failed to set up account. Please try again.",
+          "error"
+        );
+      }
     },
     onError: (error: PrivyErrorCode) => {
       console.error("Privy login error:", error);
       setIsBackendRegistered(false);
+      showErrorToast("Failed to log in. Please try again.");
     },
   });
   const { logout: privyLogout } = useLogout();
   const logout = useCallback(async () => {
     if (privyLogout) {
-      setIsBackendRegistered(false);
-      await privyLogout();
-      router.push("/");
+      const toastId = showLoadingToast("Logging out...");
+      try {
+        setIsBackendRegistered(false);
+        await privyLogout();
+        updateToast(toastId, "Successfully logged out!", "success");
+        router.push("/");
+      } catch (err) {
+        console.error("Failed to log out:", err);
+        updateToast(toastId, "Failed to log out. Please try again.", "error");
+      }
     }
   }, [privyLogout, router]);
   const isAuthenticated = useMemo(
