@@ -1,10 +1,10 @@
 import type {
   AccessControlNode,
   AccessControlState,
-  LogicalOperator,
   RuleNode,
   GroupNode,
   OperatorNode,
+  AccessControlAction,
 } from "./types";
 
 /**
@@ -92,6 +92,63 @@ function cleanupOperators(state: AccessControlState): AccessControlState {
 }
 
 /**
+ * Helper function to add a node with its operator
+ * Handles cases where the node is being added at the start, end, or middle
+ */
+function addNodeWithOperator(
+  state: AccessControlState,
+  newNode: AccessControlNode,
+  index?: number
+): AccessControlState {
+  console.log("[Reducer] Adding node with operator:", {
+    newNode,
+    index,
+    state,
+  });
+  const newState = [...state];
+  const isFirst = index === 0;
+  const isLast = index === undefined || index === state.length;
+
+  // If adding to the beginning
+  if (isFirst) {
+    newState.unshift(newNode);
+    if (state.length > 0) {
+      newState.splice(1, 0, {
+        type: "operator",
+        id: crypto.randomUUID(),
+        operator: "and",
+      } as OperatorNode);
+    }
+  }
+  // If adding to the end
+  else if (isLast) {
+    if (state.length > 0) {
+      newState.push({
+        type: "operator",
+        id: crypto.randomUUID(),
+        operator: "and",
+      } as OperatorNode);
+    }
+    newState.push(newNode);
+  }
+  // If adding to the middle
+  else {
+    const insertIndex = index!;
+    // Add operator before the new node
+    newState.splice(insertIndex, 0, {
+      type: "operator",
+      id: crypto.randomUUID(),
+      operator: "and",
+    } as OperatorNode);
+    // Add the new node
+    newState.splice(insertIndex + 1, 0, newNode);
+  }
+
+  console.log("[Reducer] After adding node:", newState);
+  return newState;
+}
+
+/**
  * Reducer for managing access control state
  * Handles adding/removing groups and rules, updating operators, and cleaning up state
  */
@@ -105,22 +162,12 @@ export function accessControlReducer(
   switch (action.type) {
     case "ADD_GROUP":
       console.log("[Reducer] Adding group");
-      newState = [
-        ...state,
-        {
-          type: "group",
-          id: crypto.randomUUID(),
-          rules: [],
-        } as GroupNode,
-      ];
-      // Add operator if there are multiple groups
-      if (state.length > 0) {
-        newState.push({
-          type: "operator",
-          id: crypto.randomUUID(),
-          operator: "and",
-        } as OperatorNode);
-      }
+      const newGroup = {
+        type: "group",
+        id: crypto.randomUUID(),
+        rules: [],
+      } as GroupNode;
+      newState = addNodeWithOperator(state, newGroup, action.index);
       console.log("[Reducer] State after adding group:", newState);
       break;
 
@@ -134,25 +181,14 @@ export function accessControlReducer(
       console.log("[Reducer] Adding rule:", action);
       newState = state.map((node: AccessControlNode) => {
         if (node.type === "group" && node.id === action.groupId) {
-          const updatedGroup = {
+          const newRule = {
+            id: crypto.randomUUID(),
+            ...action.rule,
+          } as RuleNode;
+          return {
             ...node,
-            rules: [
-              ...node.rules,
-              {
-                id: crypto.randomUUID(),
-                ...action.rule,
-              } as RuleNode,
-            ],
+            rules: addNodeWithOperator(node.rules, newRule, action.index),
           } as GroupNode;
-          // Add operator if there are multiple rules
-          if (node.rules.length > 0) {
-            updatedGroup.rules.push({
-              type: "operator",
-              id: crypto.randomUUID(),
-              operator: "and",
-            } as OperatorNode);
-          }
-          return updatedGroup;
         }
         return node;
       });
@@ -211,23 +247,3 @@ export function accessControlReducer(
   console.log("[Reducer] Final state after cleanup:", newState);
   return newState;
 }
-
-/**
- * Action types for the access control reducer
- */
-export type AccessControlAction =
-  | { type: "ADD_GROUP" }
-  | { type: "REMOVE_GROUP"; groupId: string }
-  | { type: "ADD_RULE"; groupId: string; rule: Omit<RuleNode, "id"> }
-  | { type: "REMOVE_RULE"; groupId: string; ruleId: string }
-  | {
-      type: "UPDATE_RULE";
-      groupId: string;
-      ruleId: string;
-      updates: Partial<RuleNode>;
-    }
-  | {
-      type: "UPDATE_OPERATOR";
-      operatorId: string;
-      operator: LogicalOperator;
-    };

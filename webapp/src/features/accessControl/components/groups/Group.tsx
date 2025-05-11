@@ -77,13 +77,7 @@ export function Group({ group }: GroupProps) {
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-        >
-          Add Rule
-        </button>
+      <div className="flex items-center justify-end">
         <button
           onClick={handleRemoveGroup}
           className="rounded-md bg-white p-2 text-gray-400 hover:text-gray-500"
@@ -103,47 +97,6 @@ export function Group({ group }: GroupProps) {
           </svg>
         </button>
       </div>
-
-      {isDropdownOpen && (
-        <div className="absolute mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-          <button
-            onClick={() =>
-              handleAddRule({
-                type: "paywall",
-                chain: "ethereum",
-                amount: BigInt(0),
-              } as PaywallRule)
-            }
-            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-          >
-            Add Paywall Rule
-          </button>
-          <button
-            onClick={() =>
-              handleAddRule({
-                type: "litAction",
-              } as LitActionRule)
-            }
-            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-          >
-            Add Lit Action Rule
-          </button>
-          <button
-            onClick={() =>
-              handleAddRule({
-                type: "token",
-                subtype: "ERC20",
-                chain: "ethereum",
-                contract: "",
-                tokenNum: 0,
-              } as TokenRule)
-            }
-            className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-          >
-            Add Token Rule
-          </button>
-        </div>
-      )}
 
       <div className="mt-4 space-y-4">
         {group.rules.map((node) => {
@@ -166,6 +119,56 @@ export function Group({ group }: GroupProps) {
             );
           }
         })}
+      </div>
+
+      <div className="relative mt-4">
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+        >
+          Add Rule
+        </button>
+
+        {isDropdownOpen && (
+          <div className="absolute bottom-full left-0 mb-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+            <button
+              onClick={() =>
+                handleAddRule({
+                  type: "paywall",
+                  chain: "ethereum",
+                  amount: BigInt(0),
+                } as PaywallRule)
+              }
+              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Add Paywall Rule
+            </button>
+            <button
+              onClick={() =>
+                handleAddRule({
+                  type: "litAction",
+                } as LitActionRule)
+              }
+              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Add Lit Action Rule
+            </button>
+            <button
+              onClick={() =>
+                handleAddRule({
+                  type: "token",
+                  subtype: "ERC20",
+                  chain: "ethereum",
+                  contract: "",
+                  tokenNum: 0,
+                } as TokenRule)
+              }
+              className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Add Token Rule
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

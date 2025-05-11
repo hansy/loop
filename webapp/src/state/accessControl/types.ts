@@ -66,6 +66,7 @@ export type AccessControlState = AccessControlNode[];
 export type AccessControlAction =
   | {
       type: "ADD_GROUP";
+      index?: number;
     }
   | {
       type: "REMOVE_GROUP";
@@ -75,6 +76,7 @@ export type AccessControlAction =
       type: "ADD_RULE";
       groupId: string;
       rule: Omit<RuleNode, "id">;
+      index?: number;
     }
   | {
       type: "REMOVE_RULE";
