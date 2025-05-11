@@ -47,11 +47,17 @@ This document outlines the directory structure and the purpose of each key folde
   - Wrapping `fetch` calls to the application's own backend API routes (e.g., `userApiService.ts` calling `/api/users`).
   - Interacting with third-party client-side SDKs (e.g., `privyService.ts` for Privy, `livepeerService.ts` for Livepeer client interactions, `storjService.ts`, `litProtocolService.ts`).
 - `styles/`: Global styles, theme definitions, CSS resets, and base SCSS/CSS module configurations.
-- `types/`: Centralized TypeScript type definitions for the application.
+- `types/`: Centralized TypeScript type definitions for shared and database-related types.
   - `db.ts`: Types inferred from Drizzle schema (e.g., `User`, `Video`) and types for data returned by `src/lib/server/data/` services.
   - `api.ts`: Types defining the request and response shapes for API routes in `pages/api/`.
   - `shared.ts`: Types that are shared across various parts of the application (frontend and backend) but don't strictly fit into `db.ts` or `api.ts`.
   - `index.ts`: Barrel file for exporting types.
+- `state/`: State management logic and types.
+  - `accessControl/`: Access control feature state management.
+    - `types.ts`: Feature-specific types for access control.
+    - `reducer.ts`: State reducer for access control.
+    - `index.ts`: Exports for the feature.
+  - `index.ts`: Root exports for state management.
 - `db/`: Contains all database-related code, primarily for Drizzle ORM.
   - `schema.ts`: Drizzle schema definitions (tables, columns, relationships). This is the source of truth for database structure.
   - `client.ts`: Drizzle client instance initialization and database connection logic.
@@ -60,3 +66,68 @@ This document outlines the directory structure and the purpose of each key folde
 - `_document.tsx`: (For Next.js Pages Router) Custom Document component to augment `<html>` and `<body>` tags.
 
 This structure aims for a balance between feature-driven organization, clear separation of client and server concerns, and reusability.
+
+## Type Organization Strategy
+
+The application follows a hybrid approach to type organization:
+
+### Centralized Types (`/types`)
+
+Types that belong in the centralized `/types` directory:
+
+- Database-related types (derived from Drizzle schema)
+- API request/response types
+- Shared types used across multiple features
+- Types that represent core domain entities
+- Types that need to be imported by both client and server code
+
+Example:
+
+```typescript
+// /types/db.ts
+export type User = InferSelectModel<typeof users>;
+export type Video = InferSelectModel<typeof videos>;
+```
+
+### Co-located Types
+
+Types that should be co-located with their feature:
+
+- Feature-specific state types
+- Component prop types
+- Types tightly coupled to a specific feature
+- Types that are implementation details of a feature
+
+Example:
+
+```typescript
+// /state/accessControl/types.ts
+export type Rule = {
+  id: string;
+  operator: Operator;
+  // ... other rule-specific types
+};
+```
+
+### Guidelines for Type Placement
+
+1. **When to use centralized types:**
+
+   - Types that represent core domain entities
+   - Types shared across multiple features
+   - Types derived from database schema
+   - Types used in both client and server code
+
+2. **When to use co-located types:**
+
+   - Types specific to a feature's implementation
+   - Types that are tightly coupled to a component or state
+   - Types that are unlikely to be reused outside their feature
+   - Types that might change frequently with feature development
+
+3. **Best Practices:**
+   - Keep types close to where they're used
+   - Avoid circular dependencies
+   - Use barrel files (index.ts) for clean exports
+   - Document complex type relationships
+   - Consider moving types to centralized location if they become widely used

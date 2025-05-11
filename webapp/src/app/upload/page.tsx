@@ -10,6 +10,8 @@ import PrivacySettings, {
   PrivacySetting,
 } from "@/components/upload/PrivacySettings";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { AccessControlBuilder } from "@/features/accessControl/components";
+import { AccessControlProvider } from "@/contexts/AccessControlContext";
 
 const privacySettings: PrivacySetting[] = [
   {
@@ -62,73 +64,92 @@ export default function UploadPage() {
   const isFormValid = videoFile && title.trim() !== "";
 
   return (
-    <form className="min-h-screen bg-gray-50">
-      <Container>
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-8">
-            Upload Video
-          </h1>
+    <AccessControlProvider>
+      <form
+        className="min-h-screen bg-gray-50"
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <Container>
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl font-semibold text-gray-900 mb-8">
+              Upload Video
+            </h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-24">
-            {/* Left Column - Video Upload and Cover Image */}
-            <div className="bg-white rounded-lg shadow-sm p-6 space-y-8">
-              <VideoUploader onFileSelect={handleVideoSelect} />
-              <CoverImageUploader
-                onFileSelect={handleCoverImageSelect}
-                onFrameSelect={handleFrameSelect}
-              />
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-24">
+              {/* Left Column - Video Upload and Cover Image */}
+              <div className="bg-white rounded-lg shadow-sm p-6 space-y-8">
+                <VideoUploader onFileSelect={handleVideoSelect} />
+                <CoverImageUploader
+                  onFileSelect={handleCoverImageSelect}
+                  onFrameSelect={handleFrameSelect}
+                />
+              </div>
 
-            {/* Right Column - Metadata and Privacy Settings */}
-            <div className="bg-white rounded-lg shadow-sm p-6 space-y-8">
-              <VideoDetails
-                title={title}
-                description={description}
-                onTitleChange={setTitle}
-                onDescriptionChange={setDescription}
-              />
+              {/* Right Column - Metadata and Privacy Settings */}
+              <div className="bg-white rounded-lg shadow-sm p-6 space-y-8">
+                <VideoDetails
+                  title={title}
+                  description={description}
+                  onTitleChange={setTitle}
+                  onDescriptionChange={setDescription}
+                />
 
-              <div>
-                <h2 className="text-base/7 font-semibold text-gray-900">
-                  Privacy Settings
-                </h2>
-                <p className="mt-1 text-sm/6 text-gray-600">
-                  Choose who can view your video.
-                </p>
-                <div className="mt-6">
-                  <PrivacySettings
-                    settings={privacySettings}
-                    selectedSettingId={selectedPrivacy}
-                    onChange={handlePrivacyChange}
-                  />
+                <div>
+                  <h2 className="text-base/7 font-semibold text-gray-900">
+                    Privacy Settings
+                  </h2>
+                  <p className="mt-1 text-sm/6 text-gray-600">
+                    Choose who can view your video.
+                  </p>
+                  <div className="mt-6">
+                    <PrivacySettings
+                      settings={privacySettings}
+                      selectedSettingId={selectedPrivacy}
+                      onChange={handlePrivacyChange}
+                    />
+                  </div>
+
+                  {selectedPrivacy === "protected" && (
+                    <div className="mt-8">
+                      <h3 className="text-base/7 font-semibold text-gray-900">
+                        Access Control Rules
+                      </h3>
+                      <p className="mt-1 text-sm/6 text-gray-600">
+                        Define who can access your video by setting up rules.
+                      </p>
+                      <div className="mt-6">
+                        <AccessControlBuilder />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </Container>
-
-      {/* Persistent bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
-        <Container>
-          <div className="max-w-7xl mx-auto py-4 flex items-center justify-end gap-x-6">
-            <button
-              type="button"
-              className="text-sm/6 font-semibold text-gray-900"
-              onClick={() => router.back()}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!isFormValid}
-            >
-              Upload Video
-            </button>
-          </div>
         </Container>
-      </div>
-    </form>
+
+        {/* Persistent bottom bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+          <Container>
+            <div className="max-w-7xl mx-auto py-4 flex items-center justify-end gap-x-6">
+              <button
+                type="button"
+                className="text-sm/6 font-semibold text-gray-900"
+                onClick={() => router.back()}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isFormValid}
+              >
+                Upload Video
+              </button>
+            </div>
+          </Container>
+        </div>
+      </form>
+    </AccessControlProvider>
   );
 }
