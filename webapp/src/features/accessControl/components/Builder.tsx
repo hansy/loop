@@ -15,12 +15,13 @@ export function Builder() {
   const { state, dispatch } = useAccessControl();
 
   const handleAddGroup = useCallback(() => {
-    console.log("handleAddGroup called");
+    console.log("[Builder] Adding new group");
     dispatch({ type: "ADD_GROUP" });
   }, [dispatch]);
 
   const handleUpdateOperator = useCallback(
     (operatorId: string, operator: LogicalOperator) => {
+      console.log("[Builder] Updating operator:", { operatorId, operator });
       dispatch({
         type: "UPDATE_OPERATOR",
         operatorId,
@@ -32,6 +33,10 @@ export function Builder() {
 
   const renderNode = useCallback(
     (node: AccessControlNode) => {
+      console.log("[Builder] Rendering node:", {
+        type: node.type,
+        id: node.id,
+      });
       if (node.type === "group") {
         return <Group key={node.id} group={node} />;
       } else if (node.type === "operator") {
@@ -49,6 +54,7 @@ export function Builder() {
   );
 
   const renderedNodes = useMemo(() => {
+    console.log("[Builder] Rendering nodes, state:", state);
     return state.map((node) => renderNode(node));
   }, [state, renderNode]);
 

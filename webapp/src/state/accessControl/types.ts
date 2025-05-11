@@ -16,7 +16,6 @@ interface BaseTokenRule extends BaseNode {
 // ERC20: no tokenId
 export interface ERC20Rule extends BaseTokenRule {
   subtype: TokenSubtype & "ERC20";
-  tokenId?: never;
 }
 
 // ERC721: tokenId optional
@@ -62,6 +61,36 @@ export interface GroupNode extends BaseNode {
 
 export type AccessControlNode = RuleNode | OperatorNode | GroupNode;
 
-export type AccessControlGroup = AccessControlNode[];
+export type AccessControlState = AccessControlNode[];
 
-export type AccessControlCondition = AccessControlGroup;
+export type AccessControlAction =
+  | {
+      type: "ADD_GROUP";
+    }
+  | {
+      type: "REMOVE_GROUP";
+      groupId: string;
+    }
+  | {
+      type: "ADD_RULE";
+      groupId: string;
+      rule: Omit<RuleNode, "id">;
+    }
+  | {
+      type: "REMOVE_RULE";
+      groupId: string;
+      ruleId: string;
+    }
+  | {
+      type: "UPDATE_RULE";
+      groupId: string;
+      ruleId: string;
+      updates: Partial<RuleNode>;
+    }
+  | {
+      type: "UPDATE_OPERATOR";
+      operatorId: string;
+      operator: LogicalOperator;
+    };
+
+export type AccessControlCondition = AccessControlState;

@@ -1,13 +1,20 @@
-import React, { createContext, useContext, useReducer } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useCallback,
+} from "react";
 import {
   accessControlReducer,
   initialState,
-  AccessControlAction,
 } from "@/state/accessControl/reducer";
-import type { AccessControlGroup } from "@/state/accessControl/types";
+import type {
+  AccessControlState,
+  AccessControlAction,
+} from "@/state/accessControl/types";
 
 type AccessControlContextType = {
-  state: AccessControlGroup;
+  state: AccessControlState;
   dispatch: React.Dispatch<AccessControlAction>;
 };
 
@@ -22,8 +29,13 @@ export function AccessControlProvider({
 }) {
   const [state, dispatch] = useReducer(accessControlReducer, initialState);
 
+  const wrappedDispatch = useCallback((action: AccessControlAction) => {
+    console.log("[Context] Dispatching action:", action);
+    dispatch(action);
+  }, []);
+
   return (
-    <AccessControlContext.Provider value={{ state, dispatch }}>
+    <AccessControlContext.Provider value={{ state, dispatch: wrappedDispatch }}>
       {children}
     </AccessControlContext.Provider>
   );

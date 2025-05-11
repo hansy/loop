@@ -1,325 +1,215 @@
-import { v4 as uuidv4 } from "uuid";
 import type {
-  AccessControlGroup,
-  RuleNode,
-  OperatorNode,
-  LogicalOperator,
-  PaywallRule,
-  LitActionRule,
-  ERC20Rule,
-  ERC721Rule,
-  ERC1155Rule,
-  GroupNode,
   AccessControlNode,
+  AccessControlState,
+  LogicalOperator,
+  RuleNode,
+  GroupNode,
+  OperatorNode,
 } from "./types";
 
 /**
  * Initial state for the access control builder
  * Starts with one empty group
  */
-export const initialState: AccessControlGroup = [];
+export const initialState: AccessControlState = [];
 
 /**
- * Type guard to check if a node is a group
+ * Helper function to remove a node and its surrounding operators
+ * Handles cases where the node is at the start, end, or middle of the array
  */
-const isGroup = (node: AccessControlNode): node is GroupNode => {
-  return node.type === "group";
-};
+function removeNodeWithOperators(
+  state: AccessControlState,
+  nodeId: string
+): AccessControlState {
+  console.log("[Reducer] Removing node with operators:", { nodeId, state });
+  const index = state.findIndex((node) => node.id === nodeId);
+  if (index === -1) return state;
 
-/**
- * Type guard to check if a node is an operator
- */
-const isOperator = (node: AccessControlNode): node is OperatorNode => {
-  return node.type === "operator";
-};
+  const newState = [...state];
+  const isFirst = index === 0;
+  const isLast = index === state.length - 1;
 
-/**
- * Creates a new empty group
- */
-const createEmptyGroup = (): GroupNode => ({
-  id: uuidv4(),
-  type: "group",
-  rules: [],
-});
-
-/**
- * Creates a new operator node
- */
-const createOperator = (): OperatorNode => ({
-  id: uuidv4(),
-  type: "operator",
-  operator: "and",
-});
-
-/**
- * Creates a new rule with the correct type
- */
-const createRule = (rule: Omit<RuleNode, "id">): RuleNode => {
-  const baseRule = { ...rule, id: uuidv4() };
-
-  if (rule.type === "token" && "subtype" in rule) {
-    if (rule.subtype === "ERC20") {
-      return baseRule as ERC20Rule;
-    } else if (rule.subtype === "ERC721") {
-      return baseRule as ERC721Rule;
-    } else {
-      return baseRule as ERC1155Rule;
-    }
-  } else if (rule.type === "litAction") {
-    return baseRule as LitActionRule;
+  // Remove the node and its surrounding operators
+  if (isFirst) {
+    // If it's the first node, remove it and the operator after it (if it exists)
+    newState.splice(0, state[1]?.type === "operator" ? 2 : 1);
+  } else if (isLast) {
+    // If it's the last node, remove it and the operator before it (if it exists)
+    newState.splice(
+      state[index - 1]?.type === "operator" ? index - 1 : index,
+      state[index - 1]?.type === "operator" ? 2 : 1
+    );
   } else {
-    return baseRule as PaywallRule;
+    // If it's in the middle, remove it and both surrounding operators (if they exist)
+    const prevIsOperator = state[index - 1]?.type === "operator";
+    const nextIsOperator = state[index + 1]?.type === "operator";
+    newState.splice(
+      prevIsOperator ? index - 1 : index,
+      prevIsOperator && nextIsOperator
+        ? 3
+        : prevIsOperator || nextIsOperator
+        ? 2
+        : 1
+    );
   }
-};
+
+  console.log("[Reducer] After removing node:", newState);
+  return newState;
+}
 
 /**
- * Finds a group by ID in the state
+ * Helper function to clean up operators in the state
+ * Ensures operators are only between groups and removes any orphaned operators
  */
-const findGroupById = (
-  state: AccessControlGroup,
-  groupId: string
-): { group: GroupNode; index: number } | null => {
-  for (let i = 0; i < state.length; i++) {
-    const node = state[i];
-    if (isGroup(node) && node.id === groupId) {
-      return { group: node, index: i };
-    }
-  }
-  return null;
-};
-
-/**
- * Finds a node by ID in the state
- */
-const findNodeById = (
-  state: AccessControlGroup,
-  id: string
-): { node: AccessControlNode; index: number; group?: GroupNode } | null => {
-  for (let i = 0; i < state.length; i++) {
-    const node = state[i];
-    if (isGroup(node)) {
-      // Search within the group
-      const index = node.rules.findIndex(
-        (rule: AccessControlNode) => rule.id === id
-      );
-      if (index !== -1) {
-        return { node: node.rules[index], index, group: node };
-      }
-    } else if (node.id === id) {
-      return { node, index: i };
-    }
-  }
-  return null;
-};
-
-/**
- * Removes a node and its surrounding operators from an array
- * Handles cases where the node is at the beginning, middle, or end
- */
-const removeNodeWithOperators = (
-  array: AccessControlNode[],
-  index: number
-): void => {
-  // If the node is at the beginning
-  if (index === 0) {
-    // If there's an operator after this node, remove it too
-    if (array.length > 1 && isOperator(array[1])) {
-      array.splice(0, 2);
-    } else {
-      array.splice(0, 1);
-    }
-    return;
-  }
-
-  // If the node is at the end
-  if (index === array.length - 1) {
-    // If there's an operator before this node, remove it too
-    if (isOperator(array[index - 1])) {
-      array.splice(index - 1, 2);
-    } else {
-      array.splice(index, 1);
-    }
-    return;
-  }
-
-  // If the node is in the middle
-  const hasOperatorBefore = isOperator(array[index - 1]);
-  const hasOperatorAfter = isOperator(array[index + 1]);
-
-  if (hasOperatorBefore && hasOperatorAfter) {
-    // If there are operators on both sides, remove the node and the operator after it
-    array.splice(index, 2);
-  } else if (hasOperatorBefore) {
-    // If there's only an operator before, remove both
-    array.splice(index - 1, 2);
-  } else if (hasOperatorAfter) {
-    // If there's only an operator after, remove both
-    array.splice(index, 2);
-  } else {
-    // If there are no operators, just remove the node
-    array.splice(index, 1);
-  }
-};
-
-/**
- * Ensures the state has no orphaned operators
- * Removes any operators at the start or end of the array
- * and ensures operators are only between groups
- */
-const cleanupOperators = (state: AccessControlGroup): AccessControlGroup => {
+function cleanupOperators(state: AccessControlState): AccessControlState {
+  console.log("[Reducer] Cleaning up operators:", state);
   const newState = [...state];
 
   // Remove operators from start and end
-  while (newState.length > 0 && isOperator(newState[0])) {
+  while (newState.length > 0 && newState[0].type === "operator") {
     newState.shift();
   }
-  while (newState.length > 0 && isOperator(newState[newState.length - 1])) {
+  while (
+    newState.length > 0 &&
+    newState[newState.length - 1].type === "operator"
+  ) {
     newState.pop();
   }
 
-  // Ensure operators are only between groups
+  // Remove consecutive operators and ensure operators are only between groups
   for (let i = 0; i < newState.length - 1; i++) {
-    if (isGroup(newState[i]) && isGroup(newState[i + 1])) {
-      // If there's no operator between these groups, add one
-      if (!isOperator(newState[i + 1])) {
-        newState.splice(i + 1, 0, createOperator());
-      }
-    } else if (isOperator(newState[i]) && isOperator(newState[i + 1])) {
-      // If there are consecutive operators, remove one
+    if (
+      newState[i].type === "operator" &&
+      newState[i + 1].type === "operator"
+    ) {
       newState.splice(i, 1);
       i--;
     }
   }
 
+  console.log("[Reducer] After cleanup:", newState);
   return newState;
-};
+}
 
 /**
  * Reducer for managing access control state
- * Handles all state transitions for the access control builder
+ * Handles adding/removing groups and rules, updating operators, and cleaning up state
  */
 export function accessControlReducer(
-  state: AccessControlGroup,
+  state: AccessControlState,
   action: AccessControlAction
-): AccessControlGroup {
-  let newState: AccessControlGroup;
+): AccessControlState {
+  console.log("[Reducer] Processing action:", action);
+  let newState: AccessControlState;
 
   switch (action.type) {
-    case "ADD_GROUP": {
-      // Add the new group first
-      newState = [...state, createEmptyGroup()];
-
-      // Then add an operator if there are now multiple groups
-      if (newState.length > 1) {
-        newState.push(createOperator());
+    case "ADD_GROUP":
+      console.log("[Reducer] Adding group");
+      newState = [
+        ...state,
+        {
+          type: "group",
+          id: crypto.randomUUID(),
+          rules: [],
+        } as GroupNode,
+      ];
+      // Add operator if there are multiple groups
+      if (state.length > 0) {
+        newState.push({
+          type: "operator",
+          id: crypto.randomUUID(),
+          operator: "and",
+        } as OperatorNode);
       }
+      console.log("[Reducer] State after adding group:", newState);
       break;
-    }
 
-    case "REMOVE_GROUP": {
-      const { groupId } = action;
-      newState = [...state];
-      const result = findGroupById(newState, groupId);
-
-      if (result) {
-        removeNodeWithOperators(newState, result.index);
-      }
+    case "REMOVE_GROUP":
+      console.log("[Reducer] Removing group:", action.groupId);
+      newState = removeNodeWithOperators(state, action.groupId);
+      console.log("[Reducer] State after removing group:", newState);
       break;
-    }
 
-    case "ADD_RULE": {
-      const { groupId, rule } = action;
-      newState = [...state];
-      const result = findGroupById(newState, groupId);
-
-      if (result) {
-        const group = result.group;
-
-        // Add an operator if there are existing rules
-        if (group.rules.length > 0) {
-          // Check if the last element is already an operator
-          const lastElement = group.rules[group.rules.length - 1];
-          if (!isOperator(lastElement)) {
-            group.rules.push(createOperator());
+    case "ADD_RULE":
+      console.log("[Reducer] Adding rule:", action);
+      newState = state.map((node: AccessControlNode) => {
+        if (node.type === "group" && node.id === action.groupId) {
+          const updatedGroup = {
+            ...node,
+            rules: [
+              ...node.rules,
+              {
+                id: crypto.randomUUID(),
+                ...action.rule,
+              } as RuleNode,
+            ],
+          } as GroupNode;
+          // Add operator if there are multiple rules
+          if (node.rules.length > 0) {
+            updatedGroup.rules.push({
+              type: "operator",
+              id: crypto.randomUUID(),
+              operator: "and",
+            } as OperatorNode);
           }
+          return updatedGroup;
         }
-
-        // Add the new rule
-        group.rules.push(createRule(rule));
-      }
+        return node;
+      });
+      console.log("[Reducer] State after adding rule:", newState);
       break;
-    }
 
-    case "REMOVE_RULE": {
-      const { ruleId } = action;
-      newState = [...state];
-
-      // Search through all groups for the rule
-      for (let i = 0; i < newState.length; i++) {
-        const node = newState[i];
-        if (isGroup(node)) {
-          const ruleIndex = node.rules.findIndex(
-            (rule: AccessControlNode) => rule.id === ruleId
-          );
-
-          if (ruleIndex !== -1) {
-            removeNodeWithOperators(node.rules, ruleIndex);
-            break;
-          }
+    case "REMOVE_RULE":
+      console.log("[Reducer] Removing rule:", action);
+      newState = state.map((node: AccessControlNode) => {
+        if (node.type === "group" && node.id === action.groupId) {
+          return {
+            ...node,
+            rules: removeNodeWithOperators(node.rules, action.ruleId),
+          } as GroupNode;
         }
-      }
+        return node;
+      });
+      console.log("[Reducer] State after removing rule:", newState);
       break;
-    }
 
-    case "UPDATE_RULE": {
-      const { ruleId, updates } = action;
-      newState = [...state];
-
-      // Search through all groups for the rule
-      for (let i = 0; i < newState.length; i++) {
-        const node = newState[i];
-        if (isGroup(node)) {
-          const ruleIndex = node.rules.findIndex(
-            (rule: AccessControlNode) => rule.id === ruleId
-          );
-
-          if (ruleIndex !== -1) {
-            // Update the rule while preserving its type
-            node.rules[ruleIndex] = createRule({
-              ...(node.rules[ruleIndex] as RuleNode),
-              ...updates,
-            });
-            break;
-          }
+    case "UPDATE_RULE":
+      console.log("[Reducer] Updating rule:", action);
+      newState = state.map((node: AccessControlNode) => {
+        if (node.type === "group" && node.id === action.groupId) {
+          return {
+            ...node,
+            rules: node.rules.map((rule) =>
+              rule.type !== "operator" && rule.id === action.ruleId
+                ? { ...rule, ...action.updates }
+                : rule
+            ),
+          } as GroupNode;
         }
-      }
+        return node;
+      });
+      console.log("[Reducer] State after updating rule:", newState);
       break;
-    }
 
-    case "UPDATE_OPERATOR": {
-      const { operatorId, operator } = action;
-      newState = [...state];
-      const result = findNodeById(newState, operatorId);
-
-      if (result && isOperator(result.node)) {
-        // Update the operator
-        if (result.group) {
-          // Update operator within a group
-          result.group.rules[result.index] = { ...result.node, operator };
-        } else {
-          // Update top-level operator
-          newState[result.index] = { ...result.node, operator };
-        }
-      }
+    case "UPDATE_OPERATOR":
+      console.log("[Reducer] Updating operator:", action);
+      newState = state.map((node: AccessControlNode) =>
+        node.type === "operator" && node.id === action.operatorId
+          ? ({ ...node, operator: action.operator } as OperatorNode)
+          : node
+      );
+      console.log("[Reducer] State after updating operator:", newState);
       break;
-    }
 
     default:
-      newState = state;
+      console.log("[Reducer] Unknown action type:", action);
+      return state;
   }
 
-  // Clean up any orphaned operators after each action
-  return cleanupOperators(newState);
+  // Clean up operators after any action
+  newState = cleanupOperators(newState);
+  console.log("[Reducer] Final state after cleanup:", newState);
+  return newState;
 }
 
 /**
@@ -329,9 +219,10 @@ export type AccessControlAction =
   | { type: "ADD_GROUP" }
   | { type: "REMOVE_GROUP"; groupId: string }
   | { type: "ADD_RULE"; groupId: string; rule: Omit<RuleNode, "id"> }
-  | { type: "REMOVE_RULE"; ruleId: string }
+  | { type: "REMOVE_RULE"; groupId: string; ruleId: string }
   | {
       type: "UPDATE_RULE";
+      groupId: string;
       ruleId: string;
       updates: Partial<RuleNode>;
     }
