@@ -251,20 +251,32 @@ export function accessControlReducer(
 
     case "ADD_RULE":
       console.log("[Reducer] Adding rule:", action);
-      // Only allow adding rules to the user-editable group
+      // Add rules to the specified group within user-group
       newState = state.map((node) => {
         if (node.type === "group" && node.id === "inner-group") {
           return {
             ...node,
             rules: node.rules.map((rule) => {
               if (rule.type === "group" && rule.id === "user-group") {
-                const newRule = {
-                  id: crypto.randomUUID(),
-                  ...action.rule,
-                } as RuleNode;
                 return {
                   ...rule,
-                  rules: addNodeWithOperator(rule.rules, newRule, action.index),
+                  rules: rule.rules.map((group) => {
+                    if (group.type === "group" && group.id === action.groupId) {
+                      const newRule = {
+                        id: crypto.randomUUID(),
+                        ...action.rule,
+                      } as RuleNode;
+                      return {
+                        ...group,
+                        rules: addNodeWithOperator(
+                          group.rules,
+                          newRule,
+                          action.index
+                        ),
+                      };
+                    }
+                    return group;
+                  }),
                 };
               }
               return rule;
@@ -278,7 +290,7 @@ export function accessControlReducer(
 
     case "REMOVE_RULE":
       console.log("[Reducer] Removing rule:", action);
-      // Only allow removing rules from the user-editable group
+      // Remove rules from the specified group within user-group
       newState = state.map((node) => {
         if (node.type === "group" && node.id === "inner-group") {
           return {
@@ -287,7 +299,18 @@ export function accessControlReducer(
               if (rule.type === "group" && rule.id === "user-group") {
                 return {
                   ...rule,
-                  rules: removeNodeWithOperators(rule.rules, action.ruleId),
+                  rules: rule.rules.map((group) => {
+                    if (group.type === "group" && group.id === action.groupId) {
+                      return {
+                        ...group,
+                        rules: removeNodeWithOperators(
+                          group.rules,
+                          action.ruleId
+                        ),
+                      };
+                    }
+                    return group;
+                  }),
                 };
               }
               return rule;
@@ -310,11 +333,18 @@ export function accessControlReducer(
               if (rule.type === "group" && rule.id === "user-group") {
                 return {
                   ...rule,
-                  rules: rule.rules.map((r) =>
-                    r.type !== "operator" && r.id === action.ruleId
-                      ? { ...r, ...action.updates }
-                      : r
-                  ),
+                  rules: rule.rules.map((r) => {
+                    if (r.type !== "operator" && r.id === action.ruleId) {
+                      // Ensure we maintain the rule type when updating
+                      return {
+                        ...r,
+                        ...action.updates,
+                        type: r.type, // Preserve the original rule type
+                        id: r.id, // Preserve the original rule id
+                      } as RuleNode;
+                    }
+                    return r;
+                  }),
                 };
               }
               return rule;
@@ -328,7 +358,7 @@ export function accessControlReducer(
 
     case "UPDATE_OPERATOR":
       console.log("[Reducer] Updating operator:", action);
-      // Only allow updating operators in the user-editable group
+      // Update operators in the specified group within user-group
       newState = state.map((node) => {
         if (node.type === "group" && node.id === "inner-group") {
           return {
@@ -337,11 +367,19 @@ export function accessControlReducer(
               if (rule.type === "group" && rule.id === "user-group") {
                 return {
                   ...rule,
-                  rules: rule.rules.map((r) =>
-                    r.type === "operator" && r.id === action.operatorId
-                      ? { ...r, operator: action.operator }
-                      : r
-                  ),
+                  rules: rule.rules.map((group) => {
+                    if (group.type === "group" && group.id === action.groupId) {
+                      return {
+                        ...group,
+                        rules: group.rules.map((r) =>
+                          r.type === "operator" && r.id === action.operatorId
+                            ? { ...r, operator: action.operator }
+                            : r
+                        ),
+                      };
+                    }
+                    return group;
+                  }),
                 };
               }
               return rule;

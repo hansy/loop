@@ -99,6 +99,7 @@ export type AccessControlAction =
     }
   | {
       type: "UPDATE_OPERATOR";
+      groupId: string;
       operatorId: string;
       operator: LogicalOperator;
     };
