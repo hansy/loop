@@ -63,7 +63,7 @@ interface VideoMetadataBase {
   isNSFW: boolean;
   price: VideoPrice;
   sources: VideoSource[];
-  coverImages: VideoCoverImage[];
+  coverImage: string;
   playbackAccess?: VideoAccess;
 }
 
