@@ -3,7 +3,7 @@ import {
   getUploadPartSignedUrl,
   initializeS3Client,
 } from "@/lib/common/utils/s3/index";
-import { handleApiRoute } from "@/lib/server/apiUtils";
+import { handleApiRoute } from "@/lib/server/utils/api";
 import { AppError } from "@/lib/server/AppError";
 import { User } from "@privy-io/server-auth";
 

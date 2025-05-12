@@ -3,6 +3,7 @@ import Uppy, { UppyFile, Meta, Body } from "@uppy/core";
 import type { UploadResultWithSignal } from "@uppy/aws-s3/lib/utils";
 import { Dashboard } from "@uppy/react";
 import AwsS3, { type AwsS3Part } from "@uppy/aws-s3";
+import { apiPost, apiDelete } from "@/lib/client/apiClient";
 
 // Import Uppy styles
 import "@uppy/core/dist/style.min.css";
@@ -60,23 +61,16 @@ export function VideoUploader({
         const extension = file.extension;
 
         try {
-          const response = await fetch("/api/s3/multipart", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+          const result = await apiPost<{ key: string; uploadId: string }>(
+            "/api/s3/multipart",
+            {
               key: `${videoId}/video.${extension}`,
               type: file.type,
               metadata: file.meta,
-            }),
-          });
+            }
+          );
 
-          if (!response.ok) {
-            throw new Error("Failed to create multipart upload");
-          }
-
-          return await response.json();
+          return result;
         } catch {
           return Promise.reject("Error creating multipart upload");
         }
@@ -90,16 +84,7 @@ export function VideoUploader({
         const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
 
         try {
-          const response = await fetch(
-            `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`,
-            {
-              method: "DELETE",
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to abort multipart upload");
-          }
+          await apiDelete(`/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`);
         } catch {
           return Promise.reject("Error aborting multipart upload");
         }
@@ -136,15 +121,12 @@ export function VideoUploader({
         const keyEnc = encodeURIComponent(key);
 
         try {
-          const response = await fetch(
-            `/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`
-          );
+          const result = await apiPost<{
+            url: string;
+            expires: number;
+          }>(`/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`);
 
-          if (!response.ok) {
-            throw new Error("Failed to sign part");
-          }
-
-          return await response.json();
+          return result;
         } catch {
           return Promise.reject("Error signing part");
         }
@@ -158,15 +140,11 @@ export function VideoUploader({
         const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
 
         try {
-          const response = await fetch(
+          const result = await apiPost<AwsS3Part[]>(
             `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`
           );
 
-          if (!response.ok) {
-            throw new Error("Failed to list parts");
-          }
-
-          return await response.json();
+          return result;
         } catch {
           return Promise.reject("Error listing parts");
         }
@@ -188,22 +166,12 @@ export function VideoUploader({
         const uploadIdEnc = encodeURIComponent(uploadId);
 
         try {
-          const response = await fetch(
+          const result = await apiPost<{ location?: string }>(
             `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ parts }),
-            }
+            { parts }
           );
 
-          if (!response.ok) {
-            throw new Error("Failed to complete multipart upload");
-          }
-
-          return await response.json();
+          return result;
         } catch {
           return Promise.reject("Error completing multipart upload");
         }
