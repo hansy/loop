@@ -7,7 +7,7 @@ export interface BaseNode {
 type TokenSubtype = "ERC20" | "ERC721" | "ERC1155";
 
 interface BaseTokenRule extends BaseNode {
-  type: "token" | "owner"; // 'owner' lives here only
+  type: "token";
   chain: string;
   contract: string;
   tokenNum: number;
@@ -32,6 +32,14 @@ export interface ERC1155Rule extends BaseTokenRule {
 
 export type TokenRule = ERC20Rule | ERC721Rule | ERC1155Rule;
 
+// ---------- Owner Rule ----------
+export interface OwnerRule extends BaseNode {
+  type: "owner";
+  chain: string;
+  contract: string;
+  tokenNum: number;
+}
+
 // ---------- Paywall Rule ----------
 export interface PaywallRule extends BaseNode {
   type: "paywall";
@@ -45,7 +53,7 @@ export interface LitActionRule extends BaseNode {
 }
 
 // ---------- Union of All Rules ----------
-export type RuleNode = TokenRule | PaywallRule | LitActionRule;
+export type RuleNode = TokenRule | PaywallRule | LitActionRule | OwnerRule;
 
 export type LogicalOperator = "and" | "or";
 

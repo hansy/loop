@@ -152,6 +152,12 @@ export function RuleNode({ rule, onUpdate, onRemove }: RuleNodeProps) {
             <p className="text-sm text-gray-500">Lit Action Rule</p>
           </div>
         )}
+
+        {rule.type === "owner" && (
+          <div>
+            <p className="text-sm text-gray-500">Owner Rule</p>
+          </div>
+        )}
       </div>
       <button
         onClick={handleRemove}
