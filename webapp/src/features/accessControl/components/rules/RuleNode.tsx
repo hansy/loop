@@ -22,8 +22,8 @@ export function RuleNode({ rule, onUpdate, onRemove }: RuleNodeProps) {
   };
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4">
-      <div className="flex-1 space-y-4">
+    <div className="flex rounded-lg border border-gray-200 bg-white">
+      <div className="flex-1 space-y-4 p-4">
         {rule.type === "token" && (
           <>
             <div>
@@ -159,24 +159,26 @@ export function RuleNode({ rule, onUpdate, onRemove }: RuleNodeProps) {
           </div>
         )}
       </div>
-      <button
-        onClick={handleRemove}
-        className="ml-4 rounded-md bg-white p-2 text-gray-400 hover:text-gray-500"
-        aria-label="Remove rule"
-      >
-        <svg
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
+      <div className="flex items-center border-l border-gray-200 bg-gray-100">
+        <button
+          onClick={handleRemove}
+          className="flex h-full w-full items-center justify-center rounded-r-lg text-gray-400 hover:bg-gray-200 hover:text-gray-500 px-4"
+          aria-label="Remove rule"
         >
-          <path
-            fillRule="evenodd"
-            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
