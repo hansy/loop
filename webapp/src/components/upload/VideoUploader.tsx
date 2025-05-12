@@ -206,6 +206,7 @@ export function VideoUploader({
         height={200}
         width={0}
         locale={{
+          // @ts-expect-error - Uppy locale is not typed correctly
           strings: {
             dropPasteFiles: "Drop video here or %{browseFiles}",
             browseFiles: "browse",
