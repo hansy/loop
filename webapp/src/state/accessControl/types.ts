@@ -104,3 +104,6 @@ export type AccessControlAction =
     };
 
 export type AccessControlCondition = AccessControlState;
+
+// Alias for all possible rule type strings, for use in UI and elsewhere
+export type RuleType = "token";
