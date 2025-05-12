@@ -41,7 +41,13 @@ export const initialState: AccessControlState = [
       {
         type: "group",
         id: "user-group",
-        rules: [],
+        rules: [
+          {
+            type: "group",
+            id: crypto.randomUUID(),
+            rules: [],
+          } as GroupNode,
+        ],
       } as GroupNode,
     ],
   } as GroupNode,
