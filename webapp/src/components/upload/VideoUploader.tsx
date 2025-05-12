@@ -1,52 +1,217 @@
-import React from "react";
-import { VideoCameraIcon } from "@heroicons/react/24/solid";
+import { useEffect, useMemo } from "react";
+import Uppy, { UppyFile, Meta, Body } from "@uppy/core";
+import type { UploadResultWithSignal } from "@uppy/aws-s3/lib/utils";
+import { Dashboard } from "@uppy/react";
+import AwsS3, { type AwsS3Part } from "@uppy/aws-s3";
+import { apiPost, apiGet, apiDelete } from "@/lib/client/apiClient";
+
+// Import Uppy styles
+import "@uppy/core/dist/style.min.css";
+import "@uppy/dashboard/dist/style.min.css";
 
 interface VideoUploaderProps {
-  onFileSelect?: (file: File) => void;
+  videoId: string;
+  onSuccess?: (key: string, type: string) => void;
+  onError?: (error: Error) => void;
 }
 
-export default function VideoUploader({ onFileSelect }: VideoUploaderProps) {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && onFileSelect) {
-      onFileSelect(file);
-    }
-  };
+/**
+ * VideoUploader component that handles multipart uploads to S3 using Uppy
+ *
+ * Features:
+ * - Drag and drop interface
+ * - Progress tracking
+ * - Automatic multipart upload handling
+ * - Error handling
+ * - File type validation
+ * - Direct S3 uploads with presigned URLs
+ *
+ * @param videoId - Required UUID for the video. Used in S3 key generation and metadata.
+ * @param onSuccess - Optional callback when upload completes successfully
+ * @param onError - Optional callback when upload fails
+ */
+export function VideoUploader({
+  videoId,
+  onSuccess,
+  onError,
+}: VideoUploaderProps) {
+  const uppy = useMemo(() => {
+    const instance = new Uppy({
+      restrictions: {
+        maxNumberOfFiles: 1,
+        maxFileSize: 30 * 1024 * 1024 * 1024, // 30GB
+        allowedFileTypes: ["video/*"],
+      },
+      autoProceed: false,
+    }).use(AwsS3, {
+      shouldUseMultipart: true,
+      async createMultipartUpload(file: UppyFile<Meta, Body>) {
+        const extension = file.extension;
+
+        try {
+          const result = await apiPost<{ key: string; uploadId: string }>(
+            "/api/s3/multipart",
+            {
+              key: `${videoId}/video.${extension}`,
+              type: file.type,
+              metadata: file.meta,
+            }
+          );
+
+          return result;
+        } catch {
+          return Promise.reject("Error creating multipart upload");
+        }
+      },
+
+      async abortMultipartUpload(
+        _file: UppyFile<Meta, Body>,
+        options: UploadResultWithSignal
+      ) {
+        const keyEnc = encodeURIComponent(options.key);
+        const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
+
+        try {
+          await apiDelete(`/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`);
+        } catch {
+          return Promise.reject("Error aborting multipart upload");
+        }
+      },
+
+      async signPart(
+        _file: UppyFile<Meta, Body>,
+        {
+          uploadId,
+          key,
+          partNumber,
+          signal,
+        }: {
+          uploadId: string;
+          key: string;
+          partNumber: number;
+          signal?: AbortSignal;
+        }
+      ) {
+        if (signal?.aborted) {
+          const err = new DOMException(
+            "The operation was aborted",
+            "AbortError"
+          );
+          throw err;
+        }
+
+        if (uploadId == null || key == null || partNumber == null) {
+          throw new Error(
+            "Cannot sign without a key, an uploadId, and a partNumber"
+          );
+        }
+
+        const keyEnc = encodeURIComponent(key);
+
+        try {
+          const result = await apiGet<{
+            url: string;
+            expires: number;
+          }>(`/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`);
+
+          return result;
+        } catch {
+          return Promise.reject("Error signing part");
+        }
+      },
+
+      async listParts(
+        _file: UppyFile<Meta, Body>,
+        options: UploadResultWithSignal
+      ) {
+        const keyEnc = encodeURIComponent(options.key);
+        const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
+
+        try {
+          const result = await apiGet<AwsS3Part[]>(
+            `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`
+          );
+
+          return result;
+        } catch {
+          return Promise.reject("Error listing parts");
+        }
+      },
+
+      async completeMultipartUpload(
+        _file: UppyFile<Meta, Body>,
+        {
+          key,
+          uploadId,
+          parts,
+        }: {
+          key: string;
+          uploadId: string;
+          parts: AwsS3Part[];
+        }
+      ) {
+        const keyEnc = encodeURIComponent(key);
+        const uploadIdEnc = encodeURIComponent(uploadId);
+
+        try {
+          const result = await apiPost<{ location?: string }>(
+            `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}`,
+            { parts }
+          );
+
+          return result;
+        } catch {
+          return Promise.reject("Error completing multipart upload");
+        }
+      },
+    });
+
+    // Handle file added event
+    instance.on("file-added", async () => {
+      try {
+        const uploadResult = await instance.upload();
+
+        console.log("uploadResult", uploadResult);
+
+        if (uploadResult?.successful?.[0]) {
+          const uploadedFile = uploadResult.successful[0];
+          const key = uploadedFile.response?.body?.key;
+          const type = uploadedFile.type;
+
+          if (key && type) {
+            onSuccess?.(key, type);
+          }
+        }
+      } catch (e) {
+        onError?.(e instanceof Error ? e : new Error(String(e)));
+      }
+    });
+
+    return instance;
+  }, [videoId, onSuccess, onError]);
+
+  useEffect(() => {
+    return () => {
+      uppy.cancelAll();
+    };
+  }, [uppy]);
 
   return (
-    <div>
-      <h2 className="text-base/7 font-semibold text-gray-900">Video File</h2>
-      <p className="mt-1 text-sm/6 text-gray-600">
-        Upload your video. Supported formats: MP4, MOV, AVI up to 2GB.
-      </p>
-      <div className="mt-4">
-        <div className="flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-          <div className="text-center">
-            <VideoCameraIcon
-              className="mx-auto size-12 text-gray-300"
-              aria-hidden="true"
-            />
-            <div className="mt-4 flex text-sm/6 text-gray-600">
-              <label
-                htmlFor="video-upload"
-                className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 focus-within:outline-hidden hover:text-indigo-500"
-              >
-                <span>Upload a video</span>
-                <input
-                  id="video-upload"
-                  name="video-upload"
-                  type="file"
-                  className="sr-only"
-                  accept="video/*"
-                  onChange={handleFileChange}
-                />
-              </label>
-              <p className="pl-1">or drag and drop</p>
-            </div>
-            <p className="text-xs/5 text-gray-600">MP4, MOV, AVI up to 2GB</p>
-          </div>
-        </div>
-      </div>
+    <div className="w-full max-w-3xl mx-auto">
+      <Dashboard
+        uppy={uppy}
+        hideUploadButton={true}
+        doneButtonHandler={undefined}
+        proudlyDisplayPoweredByUppy={false}
+        height={200}
+        width={0}
+        locale={{
+          strings: {
+            dropPasteFiles: "Drop video here or %{browseFiles}",
+            browseFiles: "browse",
+          },
+        }}
+      />
     </div>
   );
 }

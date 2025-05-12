@@ -31,14 +31,16 @@ import { User } from "@privy-io/server-auth";
 async function handler(
   req: NextRequest,
   privyUser: User | null,
-  context: { params: { uploadId: string } }
+  { params }: { params: Promise<{ uploadId: string }> }
 ): Promise<Response> {
   if (!privyUser) {
     throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
   }
 
-  const { uploadId } = context.params;
+  const { uploadId } = await params;
+  console.log("uploadId", uploadId);
   const key = req.nextUrl.searchParams.get("key");
+  console.log("key", key);
   const body = await req.json();
   const { parts } = body;
 

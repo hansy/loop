@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Container from "@/components/layout/Container";
 import { useRouter } from "next/navigation";
-import VideoUploader from "@/components/upload/VideoUploader";
+import { VideoUploader } from "@/components/upload/VideoUploader";
 import CoverImageUploader from "@/components/upload/CoverImageUploader";
 import VideoDetails from "@/components/upload/VideoDetails";
 import PrivacySettings, {
@@ -19,6 +19,7 @@ import {
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
 import { ZodError } from "zod";
+import { v7 as uuidv7 } from "uuid";
 
 const privacySettings: PrivacySetting[] = [
   {
@@ -38,7 +39,9 @@ export default function UploadForm() {
   const router = useRouter();
   const { address } = useAccount();
   const { state: accessControlState } = useAccessControl();
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoId] = useState(() => uuidv7()); // Generate ID once when component mounts
+  const [videoKey, setVideoKey] = useState<string | null>(null);
+  const [videoType, setVideoType] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedPrivacy, setSelectedPrivacy] = useState("public");
@@ -46,10 +49,6 @@ export default function UploadForm() {
   const [price, setPrice] = useState(0.01);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleVideoSelect = (file: File) => {
-    setVideoFile(file);
-  };
 
   const handlePrivacyChange = (setting: PrivacySetting) => {
     setSelectedPrivacy(setting.id);
@@ -60,12 +59,26 @@ export default function UploadForm() {
     }
   };
 
+  const handleVideoUploadSuccess = (key: string, type: string) => {
+    setVideoKey(key);
+    setVideoType(type);
+    toast.success("Video uploaded successfully");
+  };
+
+  const handleVideoUploadError = (error: Error) => {
+    toast.error("Failed to upload video: " + error.message);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setIsSubmitting(true);
 
     try {
+      if (!videoKey || !videoType) {
+        throw new Error("Please upload a video first");
+      }
+
       // Validate form data
       const formData = {
         title,
@@ -86,8 +99,20 @@ export default function UploadForm() {
         address!
       );
 
+      // Add the video source
+      const metadataWithSource = {
+        ...videoMetadata,
+        sources: [
+          {
+            id: videoId,
+            src: videoKey,
+            type: videoType,
+          },
+        ],
+      };
+
       // TODO: Send to API
-      console.log("Submitting video metadata:", videoMetadata);
+      console.log("Submitting video metadata:", metadataWithSource);
 
       // Show success message
       toast.success("Video metadata submitted successfully");
@@ -114,7 +139,7 @@ export default function UploadForm() {
     }
   };
 
-  const isFormValid = true;
+  const isFormValid = videoKey && videoType && title;
 
   return (
     <form className="min-h-screen bg-gray-50" onSubmit={handleSubmit}>
@@ -127,7 +152,11 @@ export default function UploadForm() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-24">
             {/* Left Column - Video Upload and Cover Image */}
             <div className="bg-white rounded-lg shadow-sm p-6 space-y-8">
-              <VideoUploader onFileSelect={handleVideoSelect} />
+              <VideoUploader
+                videoId={videoId}
+                onSuccess={handleVideoUploadSuccess}
+                onError={handleVideoUploadError}
+              />
               <CoverImageUploader
                 onFileSelect={() => {}} // TODO: Implement cover image upload
                 onFrameSelect={() => {}} // TODO: Implement frame selection
@@ -158,46 +187,34 @@ export default function UploadForm() {
                     onChange={handlePrivacyChange}
                   />
                 </div>
-
-                {selectedPrivacy === "protected" && (
-                  <>
-                    <div className="mt-8">
-                      <h3 className="text-base/7 font-semibold text-gray-900">
-                        Paywall
-                      </h3>
-                      <p className="mt-1 text-sm/6 text-gray-600">
-                        Set up a paywall for your video.
-                      </p>
-                      <div className="mt-6">
-                        <PaywallSettings
-                          isPaywalled={isPaywalled}
-                          price={price}
-                          onPaywallChange={setIsPaywalled}
-                          onPriceChange={setPrice}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-8">
-                      <h3 className="text-base/7 font-semibold text-gray-900">
-                        Additional Access Controls
-                      </h3>
-                      <p className="mt-1 text-sm/6 text-gray-600">
-                        Set up additional access controls for your video
-                      </p>
-                      <div className="mt-6">
-                        <AccessControlBuilder />
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
+
+              {selectedPrivacy === "protected" && (
+                <div>
+                  <h2 className="text-base/7 font-semibold text-gray-900">
+                    Access Control
+                  </h2>
+                  <p className="mt-1 text-sm/6 text-gray-600">
+                    Define who can access your video.
+                  </p>
+                  <div className="mt-6">
+                    <AccessControlBuilder />
+                  </div>
+                </div>
+              )}
+
+              <PaywallSettings
+                isPaywalled={isPaywalled}
+                price={price}
+                onPaywallChange={setIsPaywalled}
+                onPriceChange={setPrice}
+                disabled={selectedPrivacy === "public"}
+              />
             </div>
           </div>
         </div>
       </Container>
 
-      {/* Persistent bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
         <Container>
           <div className="max-w-7xl mx-auto py-4 flex items-center justify-end gap-x-6">

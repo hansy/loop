@@ -24,18 +24,21 @@ import { User } from "@privy-io/server-auth";
  *   }
  * }
  */
+
 async function handler(
   req: NextRequest,
   privyUser: User | null,
-  context: {
-    params: { uploadId: string; partId: string };
+  {
+    params,
+  }: {
+    params: Promise<{ uploadId: string; partId: string }>;
   }
 ): Promise<Response> {
   if (!privyUser) {
     throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
   }
 
-  const { uploadId, partId } = context.params;
+  const { uploadId, partId } = await params;
   const key = req.nextUrl.searchParams.get("key");
   const partNumber = parseInt(partId, 10);
 
@@ -57,4 +60,4 @@ async function handler(
   return Response.json({ success: true, data });
 }
 
-export const GET = handleApiRoute(handler, { requireAuth: true });
+export const GET = handleApiRoute(handler);

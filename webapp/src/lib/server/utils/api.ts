@@ -124,7 +124,7 @@ export function errorResponse(
  * @returns An async function that takes NextRequest and context, and returns a Promise<NextResponse | Response>.
  */
 export function handleApiRoute<
-  TContext = { params?: Record<string, string | string[]> }
+  TContext extends { params: Promise<Record<string, string>> }
 >(
   handler: (
     req: NextRequest,
@@ -143,7 +143,8 @@ export function handleApiRoute<
         // This function will throw an AppError if auth fails (e.g., token missing, invalid)
         privyUser = await getVerifiedPrivyUserFromCookies(await cookies());
       }
-      // Delegate to the original handler, passing the request, (potentially null) privyUse r, and context
+
+      // Delegate to the original handler, passing the request, (potentially null) privyUser, and context
       return await handler(req, privyUser, context);
     } catch (error) {
       // If auth fails (AppError from getVerifiedPrivyUserFromCookies) or handler throws an error,

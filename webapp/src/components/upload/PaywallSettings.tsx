@@ -6,6 +6,7 @@ interface PaywallSettingsProps {
   price: number;
   onPaywallChange: (isPaywalled: boolean) => void;
   onPriceChange: (price: number) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -14,12 +15,14 @@ interface PaywallSettingsProps {
  * @param price - The price of the video in USDC
  * @param onPaywallChange - Callback when paywall toggle changes
  * @param onPriceChange - Callback when price changes
+ * @param disabled - Whether the paywall settings are disabled
  */
 export default function PaywallSettings({
   isPaywalled,
   price,
   onPaywallChange,
   onPriceChange,
+  disabled = false,
 }: PaywallSettingsProps) {
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -46,7 +49,8 @@ export default function PaywallSettings({
         <Switch
           checked={isPaywalled}
           onChange={onPaywallChange}
-          className="group relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:outline-hidden data-checked:bg-indigo-600"
+          disabled={disabled}
+          className="group relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:outline-hidden data-checked:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="sr-only">Enable paywall</span>
           <span className="pointer-events-none relative inline-block size-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out group-data-checked:translate-x-5">
@@ -104,8 +108,9 @@ export default function PaywallSettings({
                 defaultValue={price}
                 onChange={handlePriceChange}
                 placeholder="0.01"
+                disabled={disabled}
                 aria-describedby="price-currency"
-                className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
+                className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <div
                 id="price-currency"
