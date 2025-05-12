@@ -69,12 +69,17 @@ export function Group({ group }: GroupProps) {
 
   const handleUpdateOperator = (
     operatorId: string,
-    operator: LogicalOperator
+    operator: LogicalOperator,
+    targetGroupId: string
   ) => {
-    console.log("[Group] Updating operator:", { operatorId, operator });
+    console.log("[Group] Updating operator:", {
+      operatorId,
+      operator,
+      targetGroupId,
+    });
     dispatch({
       type: "UPDATE_OPERATOR",
-      groupId: group.id,
+      groupId: targetGroupId,
       operatorId,
       operator,
     });
@@ -90,7 +95,9 @@ export function Group({ group }: GroupProps) {
               <Operator
                 key={node.id}
                 operator={node.operator}
-                onChange={(operator) => handleUpdateOperator(node.id, operator)}
+                onChange={(operator) =>
+                  handleUpdateOperator(node.id, operator, "user-group")
+                }
               />
             );
           } else if (node.type === "group") {
@@ -127,7 +134,7 @@ export function Group({ group }: GroupProps) {
                           key={ruleNode.id}
                           operator={ruleNode.operator}
                           onChange={(operator) =>
-                            handleUpdateOperator(ruleNode.id, operator)
+                            handleUpdateOperator(ruleNode.id, operator, node.id)
                           }
                         />
                       );
@@ -232,7 +239,9 @@ export function Group({ group }: GroupProps) {
               <Operator
                 key={node.id}
                 operator={node.operator}
-                onChange={(operator) => handleUpdateOperator(node.id, operator)}
+                onChange={(operator) =>
+                  handleUpdateOperator(node.id, operator, group.id)
+                }
               />
             );
           } else {
