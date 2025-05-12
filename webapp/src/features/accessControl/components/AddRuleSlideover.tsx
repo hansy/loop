@@ -11,6 +11,9 @@ import { toast } from "react-toastify";
  * AddRuleSlideover
  *
  * Slideover dialog for adding or editing access control rules.
+ * Currently only supports token rules - if editing a non-token rule,
+ * it will default to creating a new token rule.
+ *
  * Props:
  *   open: boolean - whether the slideover is open
  *   onClose: () => void - callback to close the slideover
@@ -48,19 +51,11 @@ export function AddRuleSlideover({
 
   // Reset state when open/initialRule changes
   useEffect(() => {
-    console.log("[AddRuleSlideover] Effect triggered:", {
-      open,
-      initialRule,
-      currentRule: rule,
-    });
-
     if (open) {
-      if (initialRule) {
-        console.log("[AddRuleSlideover] Setting initial rule:", initialRule);
-        setSelectedRuleType(initialRule.type);
+      if (initialRule && initialRule.type === "token") {
+        setSelectedRuleType("token");
         setRule(initialRule);
       } else {
-        console.log("[AddRuleSlideover] Creating new rule");
         setSelectedRuleType("token");
         setRule({
           id: "",
@@ -94,24 +89,17 @@ export function AddRuleSlideover({
   // Handle form submission
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log("[AddRuleSlideover] Submitting form:", {
-      rule,
-      initialRule,
-      selectedRuleType,
-    });
 
     // Validate the rule
     if (rule.type === "token") {
       const validation = validateTokenRule(rule);
       if (!validation.success) {
-        console.log("[AddRuleSlideover] Validation failed:", validation.error);
         toast.error(validation.error);
         return;
       }
     }
 
     // If validation passes, save and close
-    console.log("[AddRuleSlideover] Saving rule:", rule);
     onSave(rule);
     onClose();
   }

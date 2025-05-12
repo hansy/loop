@@ -192,7 +192,7 @@ export function Group({ group }: GroupProps) {
                         return null;
                       })}
                     </div>
-                    <div className="relative mt-4">
+                    <div className="relative">
                       <button
                         onClick={() => {
                           console.log(
@@ -212,7 +212,7 @@ export function Group({ group }: GroupProps) {
                   <div className="flex items-center border-l border-gray-200 bg-gray-100">
                     <button
                       onClick={() => handleRemoveGroup(node.id)}
-                      className="flex h-full w-full items-center justify-center rounded-r-lg text-gray-400 hover:bg-gray-200 hover:text-gray-500"
+                      className="flex h-full w-full items-center justify-center rounded-r-lg text-gray-400 hover:bg-gray-200 hover:text-gray-500 px-4 "
                       aria-label="Remove group"
                     >
                       <XMarkIcon className="h-5 w-5" />
