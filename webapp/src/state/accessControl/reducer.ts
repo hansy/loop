@@ -358,6 +358,18 @@ export function accessControlReducer(
             ...node,
             rules: node.rules.map((rule) => {
               if (rule.type === "group" && rule.id === "user-group") {
+                // If updating an operator in the user-group itself
+                if (action.groupId === "user-group") {
+                  return {
+                    ...rule,
+                    rules: rule.rules.map((r) =>
+                      r.type === "operator" && r.id === action.operatorId
+                        ? { ...r, operator: action.operator }
+                        : r
+                    ),
+                  };
+                }
+                // If updating an operator in a nested group
                 return {
                   ...rule,
                   rules: rule.rules.map((group) => {
