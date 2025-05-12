@@ -12,6 +12,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.808.0",
+    "@aws-sdk/s3-request-presigner": "^3.808.0",
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "@lit-protocol/lit-node-client": "^7.1.1",
