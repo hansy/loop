@@ -157,7 +157,6 @@ export function Group({ group }: GroupProps) {
                                 {
                                   type: "paywall",
                                   chain: "ethereum",
-                                  amount: BigInt(0),
                                 } as PaywallRule,
                                 node.id
                               )
@@ -174,7 +173,7 @@ export function Group({ group }: GroupProps) {
                                   subtype: "ERC20",
                                   chain: "ethereum",
                                   contract: "",
-                                  tokenNum: 0,
+                                  numTokens: 0,
                                 } as TokenRule,
                                 node.id
                               )

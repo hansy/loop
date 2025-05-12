@@ -10,7 +10,7 @@ interface BaseTokenRule extends BaseNode {
   type: "token";
   chain: string;
   contract: string;
-  tokenNum: number;
+  numTokens: number;
 }
 
 // ERC20: no tokenId
@@ -37,14 +37,13 @@ export interface OwnerRule extends BaseNode {
   type: "owner";
   chain: string;
   contract: string;
-  tokenNum: number;
+  numTokens: number;
 }
 
 // ---------- Paywall Rule ----------
 export interface PaywallRule extends BaseNode {
   type: "paywall";
   chain: string;
-  amount: bigint;
 }
 
 // ---------- Lit Action Rule ----------

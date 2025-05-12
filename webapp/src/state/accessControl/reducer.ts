@@ -1,3 +1,4 @@
+import { DEFAULT_CHAIN } from "@/config/chainConfig";
 import type {
   AccessControlNode,
   AccessControlState,
@@ -7,6 +8,8 @@ import type {
   AccessControlAction,
   LitActionRule,
 } from "./types";
+import { camelCaseString } from "@/lib/common/utils/camelCaseString";
+import { CONTRACT_ADDRESSES } from "@/config/contracts";
 
 /**
  * Initial state for the access control builder
@@ -29,15 +32,20 @@ export const initialState: AccessControlState = [
       {
         type: "owner",
         id: "owner-rule",
-        chain: "ethereum",
-        contract: "",
-        tokenNum: 0,
+        chain: camelCaseString(DEFAULT_CHAIN.name),
+        contract: CONTRACT_ADDRESSES.VIDEO_NFT,
+        tokenId: "PLACEHOLDER",
       },
       {
         type: "operator",
         id: "inner-operator",
         operator: "or",
       } as OperatorNode,
+      {
+        type: "paywall",
+        id: "paywall-rule",
+        chain: camelCaseString(DEFAULT_CHAIN.name),
+      },
       {
         type: "group",
         id: "user-group",

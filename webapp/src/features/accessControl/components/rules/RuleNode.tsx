@@ -58,17 +58,17 @@ export function RuleNode({ rule, onUpdate, onRemove }: RuleNodeProps) {
             </div>
             <div>
               <label
-                htmlFor={`tokenNum-${rule.id}`}
+                htmlFor={`numTokens-${rule.id}`}
                 className="block text-sm font-medium text-gray-700"
               >
                 Token Number
               </label>
               <input
                 type="number"
-                id={`tokenNum-${rule.id}`}
-                value={rule.tokenNum}
+                id={`numTokens-${rule.id}`}
+                value={rule.numTokens}
                 onChange={(e) =>
-                  handleUpdate({ tokenNum: Number(e.target.value) })
+                  handleUpdate({ numTokens: Number(e.target.value) })
                 }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               />
@@ -124,23 +124,6 @@ export function RuleNode({ rule, onUpdate, onRemove }: RuleNodeProps) {
                 id={`chain-${rule.id}`}
                 value={rule.chain}
                 onChange={(e) => handleUpdate({ chain: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor={`amount-${rule.id}`}
-                className="block text-sm font-medium text-gray-700"
-              >
-                Amount
-              </label>
-              <input
-                type="number"
-                id={`amount-${rule.id}`}
-                value={Number(rule.amount)}
-                onChange={(e) =>
-                  handleUpdate({ amount: BigInt(e.target.value) })
-                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               />
             </div>
