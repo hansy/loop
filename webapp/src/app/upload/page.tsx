@@ -32,7 +32,7 @@ const privacySettings: PrivacySetting[] = [
     id: "protected",
     name: "Protected",
     description:
-      "Only people who meet certain requirements can view your video, e.g. on allowlist, has purchased video, etc.",
+      "Only people who meet certain requirements can view your video (e.g. people who have purchased the video, hold a specific token, etc.).",
   },
 ];
 
