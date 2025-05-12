@@ -74,17 +74,10 @@ function removeNodeWithOperators(
       state[index - 1]?.type === "operator" ? 2 : 1
     );
   } else {
-    // If it's in the middle, remove it and both surrounding operators (if they exist)
-    const prevIsOperator = state[index - 1]?.type === "operator";
+    // If it's in the middle, remove the node and the operator after it
+    // This keeps the operator before the node to maintain the connection
     const nextIsOperator = state[index + 1]?.type === "operator";
-    newState.splice(
-      prevIsOperator ? index - 1 : index,
-      prevIsOperator && nextIsOperator
-        ? 3
-        : prevIsOperator || nextIsOperator
-        ? 2
-        : 1
-    );
+    newState.splice(index, nextIsOperator ? 2 : 1);
   }
 
   console.log("[Reducer] After removing node:", newState);
