@@ -16,9 +16,6 @@ export default function VideoDetails({
   return (
     <div>
       <h2 className="text-base/7 font-semibold text-gray-900">Video Details</h2>
-      <p className="mt-1 text-sm/6 text-gray-600">
-        Add a title and description to help viewers find your video.
-      </p>
       <div className="mt-6 space-y-6">
         <div>
           <label

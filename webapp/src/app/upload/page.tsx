@@ -9,6 +9,7 @@ import VideoDetails from "@/components/upload/VideoDetails";
 import PrivacySettings, {
   PrivacySetting,
 } from "@/components/upload/PrivacySettings";
+import PaywallSettings from "@/components/upload/PaywallSettings";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { AccessControlBuilder } from "@/features/accessControl/components";
 import { AccessControlProvider } from "@/contexts/AccessControlContext";
@@ -23,7 +24,7 @@ const privacySettings: PrivacySetting[] = [
     id: "protected",
     name: "Protected",
     description:
-      "Only people who meet certain requirements can view your video, e.g. on allowlist, has purchased video, etc.",
+      "Only people who meet certain requirements can view your video (e.g. people who have purchased the video, hold a specific token, etc.).",
   },
 ];
 
@@ -35,6 +36,8 @@ export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedPrivacy, setSelectedPrivacy] = useState("public");
+  const [isPaywalled, setIsPaywalled] = useState(false);
+  const [price, setPrice] = useState(0.01);
 
   if (isLoading && LoadingComponent) {
     return <LoadingComponent />;
@@ -110,17 +113,37 @@ export default function UploadPage() {
                   </div>
 
                   {selectedPrivacy === "protected" && (
-                    <div className="mt-8">
-                      <h3 className="text-base/7 font-semibold text-gray-900">
-                        Access Control Rules
-                      </h3>
-                      <p className="mt-1 text-sm/6 text-gray-600">
-                        Define who can access your video by setting up rules.
-                      </p>
-                      <div className="mt-6">
-                        <AccessControlBuilder />
+                    <>
+                      <div className="mt-8">
+                        <h3 className="text-base/7 font-semibold text-gray-900">
+                          Paywall
+                        </h3>
+                        <p className="mt-1 text-sm/6 text-gray-600 max-w-sm">
+                          Set up a paywall for your video (users will need to
+                          purchase the video to watch it).
+                        </p>
+                        <div className="mt-6">
+                          <PaywallSettings
+                            isPaywalled={isPaywalled}
+                            price={price}
+                            onPaywallChange={setIsPaywalled}
+                            onPriceChange={setPrice}
+                          />
+                        </div>
                       </div>
-                    </div>
+
+                      <div className="mt-8">
+                        <h3 className="text-base/7 font-semibold text-gray-900">
+                          Advanced Access Controls
+                        </h3>
+                        <p className="mt-1 text-sm/6 text-gray-600">
+                          Set up additional access controls for your video
+                        </p>
+                        <div className="mt-6">
+                          <AccessControlBuilder />
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

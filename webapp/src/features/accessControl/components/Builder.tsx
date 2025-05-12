@@ -41,9 +41,6 @@ export function Builder() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-medium text-gray-900">
-        Access Control Rules
-      </h2>
       <div className="space-y-6">
         <Group group={userGroup} />
       </div>
