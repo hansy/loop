@@ -175,14 +175,24 @@ function addNodeWithOperator(
   // If adding to the middle
   else {
     const insertIndex = index!;
-    // Add operator before the new node
-    newState.splice(insertIndex, 0, {
-      type: "operator",
-      id: crypto.randomUUID(),
-      operator: "and",
-    } as OperatorNode);
+    // Add operator before the new node if there are nodes before it
+    if (insertIndex > 0) {
+      newState.splice(insertIndex, 0, {
+        type: "operator",
+        id: crypto.randomUUID(),
+        operator: "and",
+      } as OperatorNode);
+    }
     // Add the new node
     newState.splice(insertIndex + 1, 0, newNode);
+    // Add operator after the new node if there are nodes after it
+    if (insertIndex < state.length) {
+      newState.splice(insertIndex + 2, 0, {
+        type: "operator",
+        id: crypto.randomUUID(),
+        operator: "and",
+      } as OperatorNode);
+    }
   }
 
   console.log("[Reducer] After adding node:", newState);
@@ -330,7 +340,10 @@ export function accessControlReducer(
       break;
 
     case "UPDATE_RULE":
-      console.log("[Reducer] Updating rule:", action);
+      console.log("[Reducer] Updating rule:", {
+        action,
+        currentState: state,
+      });
       // Only allow updating rules in the user-editable group
       newState = state.map((node) => {
         if (node.type === "group" && node.id === "inner-group") {
@@ -340,17 +353,31 @@ export function accessControlReducer(
               if (rule.type === "group" && rule.id === "user-group") {
                 return {
                   ...rule,
-                  rules: rule.rules.map((r) => {
-                    if (r.type !== "operator" && r.id === action.ruleId) {
-                      // Ensure we maintain the rule type when updating
+                  rules: rule.rules.map((group) => {
+                    if (group.type === "group" && group.id === action.groupId) {
                       return {
-                        ...r,
-                        ...action.updates,
-                        type: r.type, // Preserve the original rule type
-                        id: r.id, // Preserve the original rule id
-                      } as RuleNode;
+                        ...group,
+                        rules: group.rules.map((r) => {
+                          if (r.type !== "operator" && r.id === action.ruleId) {
+                            console.log("[Reducer] Found rule to update:", {
+                              originalRule: r,
+                              updates: action.updates,
+                            });
+                            // Ensure we maintain the rule type when updating
+                            const updatedRule = {
+                              ...r,
+                              ...action.updates,
+                              type: r.type, // Preserve the original rule type
+                              id: r.id, // Preserve the original rule id
+                            } as RuleNode;
+                            console.log("[Reducer] Updated rule:", updatedRule);
+                            return updatedRule;
+                          }
+                          return r;
+                        }),
+                      };
                     }
-                    return r;
+                    return group;
                   }),
                 };
               }

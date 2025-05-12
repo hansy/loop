@@ -1,33 +1,44 @@
 import React, { useState } from "react";
-import type { TokenRule } from "@/state/accessControl/types";
+import type { RuleNode } from "@/state/accessControl/types";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 /**
  * RuleFormToken
  *
- * Form fields and validation for a 'token' (ERC20, ERC721, ERC1155) access control rule.
+ * Form fields for configuring a token-based access control rule.
  * Props:
- *   value: TokenRule - current rule values
- *   onChange: (rule: TokenRule) => void - called when form values change
- *   error?: string - validation error message
+ *   value: RuleNode - the current rule value
+ *   onChange: (rule: RuleNode) => void - callback when rule is updated
+ *   error?: string - optional error message
  */
 export function RuleFormToken({
   value,
   onChange,
   error,
 }: {
-  value: TokenRule;
-  onChange: (rule: TokenRule) => void;
+  value: RuleNode;
+  onChange: (rule: RuleNode) => void;
   error?: string;
 }) {
   // Internal state for subtype selection
   const [subtype, setSubtype] = useState<"ERC20" | "ERC721" | "ERC1155">(
-    value.subtype || "ERC20"
+    "subtype" in value ? value.subtype : "ERC20"
   );
+
+  // Available chains
+  const CHAINS = [
+    { label: "Ethereum", value: "ethereum" },
+    { label: "Polygon", value: "polygon" },
+    { label: "Arbitrum", value: "arbitrum" },
+    { label: "Optimism", value: "optimism" },
+    { label: "Base", value: "base" },
+  ] as const;
 
   // Handle subtype change
   function handleSubtypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newSubtype = e.target.value as "ERC20" | "ERC721" | "ERC1155";
     setSubtype(newSubtype);
+
     // Create a new rule object with the correct shape for the selected subtype
     if (newSubtype === "ERC20") {
       // Omit tokenId for ERC20
@@ -35,33 +46,57 @@ export function RuleFormToken({
       delete rule.tokenId;
       onChange({
         ...rule,
+        type: "token",
         subtype: "ERC20",
-      } as TokenRule);
+      } as RuleNode);
     } else if (newSubtype === "ERC721") {
       onChange({
         ...value,
+        type: "token",
         subtype: "ERC721",
         tokenId:
           "tokenId" in value &&
           typeof (value as { tokenId?: string }).tokenId === "string"
             ? (value as { tokenId?: string }).tokenId!
             : "",
-      } as TokenRule);
+      } as RuleNode);
     } else if (newSubtype === "ERC1155") {
       onChange({
         ...value,
+        type: "token",
         subtype: "ERC1155",
         tokenId:
           "tokenId" in value &&
           typeof (value as { tokenId?: string }).tokenId === "string"
             ? (value as { tokenId?: string }).tokenId!
             : "",
-      } as TokenRule);
+      } as RuleNode);
     }
   }
 
   return (
     <div className="space-y-6 py-4">
+      {/* Description */}
+      <div className="text-sm text-gray-500">
+        <p>
+          Configure a token-based access rule. This rule will check if the user
+          owns the specified tokens on the selected blockchain.
+        </p>
+        <ul className="list-disc list-inside mt-2 space-y-1">
+          <li>
+            <strong>ERC20:</strong> Check for a minimum amount of fungible
+            tokens
+          </li>
+          <li>
+            <strong>ERC721:</strong> Check for ownership of a specific NFT
+          </li>
+          <li>
+            <strong>ERC1155:</strong> Check for a minimum amount of a specific
+            token ID
+          </li>
+        </ul>
+      </div>
+
       {/* Subtype Dropdown */}
       <div>
         <label
@@ -84,6 +119,7 @@ export function RuleFormToken({
           </select>
         </div>
       </div>
+
       {/* Chain Field */}
       <div>
         <label
@@ -92,18 +128,34 @@ export function RuleFormToken({
         >
           Chain
         </label>
-        <div className="mt-2 flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
-          <input
+        <div className="mt-2 grid grid-cols-1">
+          <select
             id="chain"
-            type="text"
-            placeholder="e.g. ethereum"
-            className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-            value={value.chain}
-            onChange={(e) => onChange({ ...value, chain: e.target.value })}
-            required
+            name="chain"
+            value={"chain" in value ? value.chain : ""}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                type: "token",
+                chain: e.target.value,
+              } as RuleNode)
+            }
+            className="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+          >
+            <option value="">Select a chain</option>
+            {CHAINS.map((chain) => (
+              <option key={chain.value} value={chain.value}>
+                {chain.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon
+            aria-hidden="true"
+            className="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4"
           />
         </div>
       </div>
+
       {/* Contract Field */}
       <div>
         <label
@@ -112,43 +164,56 @@ export function RuleFormToken({
         >
           Contract Address
         </label>
-        <div className="mt-2 flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
+        <div className="mt-2">
           <input
-            id="contract"
             type="text"
-            placeholder="0x..."
-            className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-            value={value.contract}
-            onChange={(e) => onChange({ ...value, contract: e.target.value })}
-            required
+            id="contract"
+            name="contract"
+            value={"contract" in value ? value.contract : ""}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                type: "token",
+                contract: e.target.value,
+              } as RuleNode)
+            }
+            className="w-full rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
           />
         </div>
       </div>
-      {/* Number of Tokens Field (ERC20, ERC1155) */}
-      {(subtype === "ERC20" || subtype === "ERC1155") && (
-        <div>
-          <label
-            htmlFor="numTokens"
-            className="block text-sm/6 font-medium text-gray-900"
-          >
-            Number of Tokens
-          </label>
-          <div className="mt-2 flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
-            <input
-              id="numTokens"
-              type="number"
-              min={1}
-              className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
-              value={value.numTokens}
-              onChange={(e) =>
-                onChange({ ...value, numTokens: Number(e.target.value) })
+
+      {/* Number of Tokens Field */}
+      <div>
+        <label
+          htmlFor="numTokens"
+          className="block text-sm/6 font-medium text-gray-900"
+        >
+          Number of Tokens
+        </label>
+        <div className="mt-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            id="numTokens"
+            name="numTokens"
+            value={"numTokens" in value ? value.numTokens : 1}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "" || /^\d+$/.test(val)) {
+                onChange({
+                  ...value,
+                  type: "token",
+                  numTokens: val === "" ? 0 : Number(val),
+                } as RuleNode);
               }
-              required
-            />
-          </div>
+            }}
+            className="w-full rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+          />
         </div>
-      )}
-      {/* Token ID Field (ERC721, ERC1155) */}
+      </div>
+
+      {/* Token ID Field (for ERC721 and ERC1155) */}
       {(subtype === "ERC721" || subtype === "ERC1155") && (
         <div>
           <label
@@ -157,27 +222,39 @@ export function RuleFormToken({
           >
             Token ID
           </label>
-          <div className="mt-2 flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600">
+          <div className="mt-2">
             <input
-              id="tokenId"
               type="text"
-              className="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6"
+              id="tokenId"
+              name="tokenId"
               value={
-                (subtype === "ERC721" || subtype === "ERC1155") &&
-                "tokenId" in value &&
-                typeof (value as { tokenId?: string }).tokenId === "string"
-                  ? (value as { tokenId?: string }).tokenId!
+                "tokenId" in value && typeof value.tokenId === "string"
+                  ? value.tokenId
                   : ""
               }
               onChange={(e) =>
-                onChange({ ...value, tokenId: e.target.value } as TokenRule)
+                onChange({
+                  ...value,
+                  type: "token",
+                  tokenId: e.target.value,
+                } as RuleNode)
               }
-              required={subtype === "ERC1155"}
+              className="w-full rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
             />
           </div>
         </div>
       )}
-      {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-md bg-red-50 p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">{error}</h3>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

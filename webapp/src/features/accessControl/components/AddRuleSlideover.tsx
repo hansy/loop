@@ -1,19 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-import type { TokenRule } from "@/state/accessControl/types";
+import type { RuleNode, ERC20Rule } from "@/state/accessControl/types";
 import { RuleFormToken } from "./RuleFormToken";
+import { validateTokenRule } from "../validations/tokenRule";
+import { toast } from "react-toastify";
 
 /**
  * AddRuleSlideover
  *
- * Slideover dialog for adding or editing an ERC20 token access control rule.
+ * Slideover dialog for adding or editing access control rules.
  * Props:
  *   open: boolean - whether the slideover is open
  *   onClose: () => void - callback to close the slideover
- *   onSave: (rule: ERC20Rule) => void - callback to save the rule
- *   initialRule?: ERC20Rule - rule to edit (if any, must be ERC20)
+ *   onSave: (rule: RuleNode) => void - callback to save the rule
+ *   initialRule?: RuleNode - rule to edit (if any)
  */
 export function AddRuleSlideover({
   open,
@@ -23,8 +25,8 @@ export function AddRuleSlideover({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (rule: TokenRule) => void;
-  initialRule?: TokenRule;
+  onSave: (rule: RuleNode) => void;
+  initialRule?: RuleNode;
 }) {
   // --- Rule type dropdown logic ---
   const RULE_TYPES = [
@@ -34,17 +36,44 @@ export function AddRuleSlideover({
   type RuleType = (typeof RULE_TYPES)[number]["value"];
 
   const [selectedRuleType, setSelectedRuleType] = useState<RuleType>("token");
-  const [rule, setRule] = useState<TokenRule>(
-    initialRule ?? {
-      id: "",
-      type: "token",
-      subtype: "ERC20",
-      chain: "",
-      contract: "",
-      numTokens: 1,
-    }
-  );
+  const [rule, setRule] = useState<RuleNode>({
+    id: "",
+    type: "token",
+    subtype: "ERC20",
+    chain: "",
+    contract: "",
+    numTokens: 0,
+  } as ERC20Rule);
   const [error, setError] = useState<string | undefined>(undefined);
+
+  // Reset state when open/initialRule changes
+  useEffect(() => {
+    console.log("[AddRuleSlideover] Effect triggered:", {
+      open,
+      initialRule,
+      currentRule: rule,
+    });
+
+    if (open) {
+      if (initialRule) {
+        console.log("[AddRuleSlideover] Setting initial rule:", initialRule);
+        setSelectedRuleType(initialRule.type);
+        setRule(initialRule);
+      } else {
+        console.log("[AddRuleSlideover] Creating new rule");
+        setSelectedRuleType("token");
+        setRule({
+          id: "",
+          type: "token",
+          subtype: "ERC20",
+          chain: "",
+          contract: "",
+          numTokens: 0,
+        } as ERC20Rule);
+      }
+      setError(undefined);
+    }
+  }, [open, initialRule]);
 
   // Handle rule type change
   function handleRuleTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -57,14 +86,32 @@ export function AddRuleSlideover({
       subtype: "ERC20",
       chain: "",
       contract: "",
-      numTokens: 1,
-    });
+      numTokens: 0,
+    } as ERC20Rule);
     setError(undefined);
   }
 
   // Handle form submission
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log("[AddRuleSlideover] Submitting form:", {
+      rule,
+      initialRule,
+      selectedRuleType,
+    });
+
+    // Validate the rule
+    if (rule.type === "token") {
+      const validation = validateTokenRule(rule);
+      if (!validation.success) {
+        console.log("[AddRuleSlideover] Validation failed:", validation.error);
+        toast.error(validation.error);
+        return;
+      }
+    }
+
+    // If validation passes, save and close
+    console.log("[AddRuleSlideover] Saving rule:", rule);
     onSave(rule);
     onClose();
   }
@@ -105,12 +152,12 @@ export function AddRuleSlideover({
                   <div className="flex flex-1 flex-col justify-between">
                     <div className="px-4 sm:px-6">
                       {/* Rule Type Dropdown at the top */}
-                      <div className="mb-6">
+                      <div className="my-6">
                         <label
                           htmlFor="rule-type"
                           className="block text-sm font-medium text-gray-700 mb-2"
                         >
-                          Rule Type
+                          Pick a rule
                         </label>
                         <div className="mt-2 grid grid-cols-1">
                           <select
@@ -142,7 +189,6 @@ export function AddRuleSlideover({
                             setRule({ ...rule, ...updates })
                           }
                           error={error}
-                          selectedType="ERC20"
                         />
                       )}
                     </div>
