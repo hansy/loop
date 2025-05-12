@@ -100,16 +100,6 @@ async function deleteHandler(
     });
     return new Response(null, { status: 204 });
   } catch (error) {
-    console.error("Error aborting multipart upload:", error);
-    if (error instanceof Error) {
-      console.error("Error details:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        // Log S3-specific error details if available
-        ...(error as any).$metadata,
-      });
-    }
     if (error instanceof Error && error.name === "AccessDenied") {
       throw new AppError(
         "Access denied to abort upload. Please check S3 permissions and bucket policy.",
