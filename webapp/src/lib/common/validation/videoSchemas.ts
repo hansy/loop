@@ -79,22 +79,6 @@ export const VideoMetadataSchema = z.discriminatedUnion("visibility", [
 ]);
 
 /**
- * Schema for validating form input during video creation
- * This schema is used for both client and server-side validation
- */
-export const createVideoFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  visibility: z.enum(["public", "protected"] as const),
-  isPaywalled: z.boolean(),
-  price: z.number().min(0, "Price must be 0 or greater"),
-  accessControlConditions: z.record(z.unknown()).optional(),
-  isDownloadable: z.boolean().default(false),
-  isNSFW: z.boolean().default(false),
-  coverImage: z.string().url().optional(),
-});
-
-/**
  * Schema for validating the input data when creating a new video.
  */
 export const NewVideoInputSchema = z.object({
@@ -107,5 +91,4 @@ export const NewVideoInputSchema = z.object({
  * TypeScript types inferred from the schemas.
  */
 export type VideoMetadata = z.infer<typeof VideoMetadataSchema>;
-export type CreateVideoFormInput = z.infer<typeof createVideoFormSchema>;
 export type NewVideoInput = z.infer<typeof NewVideoInputSchema>;
