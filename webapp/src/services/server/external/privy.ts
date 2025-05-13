@@ -1,6 +1,6 @@
 import { PrivyClient, User } from "@privy-io/server-auth";
 import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
-import { AppError } from "./AppError";
+import { AppError } from "../api/error";
 
 const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 const privyAppSecret = process.env.PRIVY_APP_SECRET;

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { User } from "@privy-io/server-auth";
-import { AppError } from "../AppError";
-import { getVerifiedPrivyUserFromCookies } from "../privy";
-import { IS_PRODUCTION } from "@/lib/common/utils/env";
+import { AppError } from "./error";
+import { getVerifiedPrivyUserFromCookies } from "../external/privy";
+import { IS_PRODUCTION } from "@/utils/env";
 
 interface SuccessResponse<T> {
   success: true;

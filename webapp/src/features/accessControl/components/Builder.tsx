@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from "react";
 import { useAccessControl } from "@/contexts/AccessControlContext";
-import type { GroupNode } from "@/state/accessControl/types";
+import type { GroupNode } from "@/features/accessControl/types";
 import { Group } from "./groups/Group";
 
 /**

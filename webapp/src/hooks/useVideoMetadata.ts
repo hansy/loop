@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from "react";
 import { useAccount } from "wagmi";
 import { useAccessControl } from "@/contexts/AccessControlContext";
-import { VideoMetadata } from "@/lib/common/validation/videoSchemas";
+import { VideoMetadata } from "@/validations/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
-import { VideoMetadataSchema } from "@/lib/common/validation/videoSchemas";
-import { convertToLitFormat } from "@/state/accessControl/litConversion";
+import { VideoMetadataSchema } from "@/validations/videoSchemas";
+import { convertToLitFormat } from "@/features/accessControl/utils/litConversion";
 
 interface UseVideoMetadataReturn {
   metadata: VideoMetadata;

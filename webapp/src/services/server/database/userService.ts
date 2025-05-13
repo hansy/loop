@@ -2,11 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { User } from "@/types/db";
-import { AppError } from "@/lib/server/AppError";
-import {
-  NewUserInputSchema,
-  NewUserInput,
-} from "@/lib/common/validation/userSchemas";
+import { AppError } from "@/services/server/api/error";
+import { NewUserInputSchema, NewUserInput } from "@/validations/userSchemas";
 
 /**
  * Finds a user in the database by their Privy DID.

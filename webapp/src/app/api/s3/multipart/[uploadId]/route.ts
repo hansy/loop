@@ -3,9 +3,9 @@ import {
   abortMultipartUpload,
   listParts,
   initializeS3Client,
-} from "@/lib/common/utils/s3/index";
-import { handleApiRoute } from "@/lib/server/utils/api";
-import { AppError } from "@/lib/server/AppError";
+} from "@/services/server/external/s3/index";
+import { handleApiRoute } from "@/services/server/api";
+import { AppError } from "@/services/server/api/error";
 import { User } from "@privy-io/server-auth";
 
 /**

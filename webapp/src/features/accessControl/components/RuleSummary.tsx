@@ -1,7 +1,7 @@
 import React from "react";
-import type { RuleNode } from "@/state/accessControl/types";
+import type { RuleNode } from "@/features/accessControl/types";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { truncateString } from "@/lib/common/utils/truncateString";
+import { truncateString } from "@/utils/truncateString";
 
 /**
  * Maps chain values to their display names

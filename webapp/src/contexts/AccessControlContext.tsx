@@ -7,11 +7,11 @@ import React, {
 import {
   accessControlReducer,
   initialState,
-} from "@/state/accessControl/reducer";
+} from "@/features/accessControl/reducer";
 import type {
   AccessControlState,
   AccessControlAction,
-} from "@/state/accessControl/types";
+} from "@/features/accessControl/types";
 
 type AccessControlContextType = {
   state: AccessControlState;

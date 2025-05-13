@@ -1,5 +1,5 @@
 import React from "react";
-import type { RuleNode } from "@/state/accessControl/types";
+import type { RuleNode } from "@/features/accessControl/types";
 
 interface RuleNodeProps {
   rule: RuleNode;

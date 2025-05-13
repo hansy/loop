@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { sendToLivepeer } from "@/services/livepeer";
-import { AppError } from "@/lib/server/AppError";
-import { handleApiRoute, successResponse } from "@/lib/server/utils/api";
+import { sendToLivepeer } from "@/services/server/external/livepeer";
+import { AppError } from "@/services/server/api/error";
+import { handleApiRoute, successResponse } from "@/services/server/api";
 import { User as PrivyUserType } from "@privy-io/server-auth";
-import { createVideo, updateVideo } from "@/lib/server/data/videoService";
-import { VideoMetadataSchema } from "@/lib/common/validation/videoSchemas";
+import { createVideo, updateVideo } from "@/services/server/database";
+import { VideoMetadataSchema } from "@/validations/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
 
 /**

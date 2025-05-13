@@ -10,9 +10,9 @@ import {
   ERC20Rule,
   ERC721Rule,
   ERC1155Rule,
-} from "@/state/accessControl/types";
+} from "@/features/accessControl/types";
 import { UnifiedAccessControlConditions } from "@lit-protocol/types";
-import { camelCaseString } from "@/lib/common/utils/camelCaseString";
+import { camelCaseString } from "@/utils/camelCaseString";
 import { DEFAULT_CHAIN } from "@/config/chainConfig";
 
 /**

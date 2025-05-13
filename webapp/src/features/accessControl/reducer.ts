@@ -8,7 +8,7 @@ import type {
   AccessControlAction,
   LitActionRule,
 } from "./types";
-import { camelCaseString } from "@/lib/common/utils/camelCaseString";
+import { camelCaseString } from "@/utils/camelCaseString";
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
 
 /**

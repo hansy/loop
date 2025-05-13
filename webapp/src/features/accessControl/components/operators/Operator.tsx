@@ -1,5 +1,5 @@
 import React from "react";
-import type { LogicalOperator } from "@/state/accessControl/types";
+import type { LogicalOperator } from "@/features/accessControl/types";
 
 interface OperatorProps {
   operator: LogicalOperator;

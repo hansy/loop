@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Avatar from "@/components/ui/Avatar";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAccount } from "wagmi";
-import { truncateString } from "@/lib/common/utils/truncateString";
+import { truncateString } from "@/utils/truncateString";
 
 const navigation = [{ name: "Library", href: "/library" }];
 

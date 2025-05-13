@@ -2,11 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { videos } from "@/db/schema";
 import { Video } from "@/types/video";
-import { AppError } from "@/lib/server/AppError";
-import {
-  NewVideoInputSchema,
-  NewVideoInput,
-} from "@/lib/common/validation/videoSchemas";
+import { AppError } from "@/services/server/api/error";
+import { NewVideoInputSchema, NewVideoInput } from "@/validations/videoSchemas";
 
 /**
  * Creates a new video record in the database.

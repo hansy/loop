@@ -1,9 +1,9 @@
-import { handleApiRoute } from "@/lib/server/utils/api";
-import { createUser } from "@/lib/server/data/userService";
-import { AppError } from "@/lib/server/AppError";
-import { successResponse } from "@/lib/server/utils/api";
+import { handleApiRoute } from "@/services/server/api";
+import { createUser } from "@/services/server/database";
+import { AppError } from "@/services/server/api/error";
+import { successResponse } from "@/services/server/api";
 import { User as PrivyUserType } from "@privy-io/server-auth";
-import { setPrivyUserCustomMetadata } from "@/lib/server/privy";
+import { setPrivyUserCustomMetadata } from "@/services/server/external/privy";
 /**
  * POST /api/users
  *

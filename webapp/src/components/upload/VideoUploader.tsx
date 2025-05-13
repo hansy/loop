@@ -3,7 +3,7 @@ import Uppy, { UppyFile, Meta, Body } from "@uppy/core";
 import type { UploadResultWithSignal } from "@uppy/aws-s3/lib/utils";
 import { Dashboard } from "@uppy/react";
 import AwsS3, { type AwsS3Part } from "@uppy/aws-s3";
-import { apiPost, apiGet, apiDelete } from "@/lib/client/apiClient";
+import { apiPost, apiGet, apiDelete } from "@/services/client";
 
 // Import Uppy styles
 import "@uppy/core/dist/style.min.css";

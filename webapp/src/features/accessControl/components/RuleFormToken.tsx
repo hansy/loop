@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { RuleNode } from "@/state/accessControl/types";
+import type { RuleNode } from "@/features/accessControl/types";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
 
 /**

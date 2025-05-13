@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-import type { RuleNode, ERC20Rule } from "@/state/accessControl/types";
+import type { RuleNode, ERC20Rule } from "@/features/accessControl/types";
 import { RuleFormToken } from "./RuleFormToken";
 import { validateTokenRule } from "../validations/tokenRule";
 import { toast } from "react-toastify";

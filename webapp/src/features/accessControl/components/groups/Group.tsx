@@ -4,7 +4,7 @@ import type {
   GroupNode,
   RuleNode,
   LogicalOperator,
-} from "@/state/accessControl/types";
+} from "@/features/accessControl/types";
 import { Operator } from "../operators/Operator";
 import { RuleNode as RuleNodeComponent } from "../rules/RuleNode";
 import { XMarkIcon } from "@heroicons/react/24/outline";

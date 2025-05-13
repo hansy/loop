@@ -16,13 +16,9 @@ import {
   User,
   PrivyErrorCode,
 } from "@privy-io/react-auth";
-import { createUser } from "@/services/userApiService";
+import { createUser } from "@/services/client/userApi";
 import { useRouter } from "next/navigation";
-import {
-  showErrorToast,
-  showLoadingToast,
-  updateToast,
-} from "@/lib/common/utils/toast";
+import { showErrorToast, showLoadingToast, updateToast } from "@/utils/toast";
 
 interface AuthContextType {
   user: User | null;

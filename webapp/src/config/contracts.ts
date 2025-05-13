@@ -1,4 +1,4 @@
-import { IS_PRODUCTION } from "@/lib/common/utils/env";
+import { IS_PRODUCTION } from "@/utils/env";
 
 /**
  * Centralized contract addresses.
