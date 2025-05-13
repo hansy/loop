@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import Uppy, { UppyFile, Meta, Body } from "@uppy/core";
 import type { UploadResultWithSignal } from "@uppy/aws-s3/lib/utils";
 import { Dashboard } from "@uppy/react";
@@ -37,150 +37,7 @@ export function VideoUploader({
 }: VideoUploaderProps) {
   // Use a ref to maintain the Uppy instance across renders
   const uppyRef = useRef<Uppy | null>(null);
-
-  // Initialize Uppy instance only once
-  useEffect(() => {
-    if (!uppyRef.current) {
-      const instance = new Uppy({
-        restrictions: {
-          maxNumberOfFiles: 1,
-          maxFileSize: 30 * 1024 * 1024 * 1024, // 30GB
-          allowedFileTypes: ["video/*"],
-        },
-        autoProceed: false,
-      }).use(AwsS3, {
-        shouldUseMultipart: true,
-        async createMultipartUpload(file: UppyFile<Meta, Body>) {
-          const extension = file.extension;
-
-          try {
-            const result = await apiPost<{ key: string; uploadId: string }>(
-              "/api/s3/multipart",
-              {
-                key: `${videoId}/video.${extension}`,
-                type: file.type,
-                metadata: file.meta,
-              }
-            );
-            return result;
-          } catch (error) {
-            return Promise.reject(error);
-          }
-        },
-
-        async abortMultipartUpload(
-          _file: UppyFile<Meta, Body>,
-          options: UploadResultWithSignal
-        ) {
-          const keyEnc = encodeURIComponent(options.key);
-          const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
-
-          try {
-            await apiDelete(`/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`);
-          } catch {
-            return Promise.reject("Error aborting multipart upload");
-          }
-        },
-
-        async signPart(
-          _file: UppyFile<Meta, Body>,
-          {
-            uploadId,
-            key,
-            partNumber,
-            signal,
-          }: {
-            uploadId: string;
-            key: string;
-            partNumber: number;
-            signal?: AbortSignal;
-          }
-        ) {
-          if (signal?.aborted) {
-            const err = new DOMException(
-              "The operation was aborted",
-              "AbortError"
-            );
-            throw err;
-          }
-
-          if (uploadId == null || key == null || partNumber == null) {
-            throw new Error(
-              "Cannot sign without a key, an uploadId, and a partNumber"
-            );
-          }
-
-          const keyEnc = encodeURIComponent(key);
-
-          try {
-            const result = await apiGet<{
-              url: string;
-              expires: number;
-            }>(`/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`);
-
-            return result;
-          } catch {
-            return Promise.reject("Error signing part");
-          }
-        },
-
-        async listParts(
-          _file: UppyFile<Meta, Body>,
-          options: UploadResultWithSignal
-        ) {
-          const keyEnc = encodeURIComponent(options.key);
-          const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
-
-          try {
-            const result = await apiGet<AwsS3Part[]>(
-              `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`
-            );
-
-            return result;
-          } catch {
-            return Promise.reject("Error listing parts");
-          }
-        },
-
-        async completeMultipartUpload(
-          _file: UppyFile<Meta, Body>,
-          {
-            key,
-            uploadId,
-            parts,
-          }: {
-            key: string;
-            uploadId: string;
-            parts: AwsS3Part[];
-          }
-        ) {
-          const keyEnc = encodeURIComponent(key);
-          const uploadIdEnc = encodeURIComponent(uploadId);
-
-          try {
-            const result = await apiPost<{ location?: string }>(
-              `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}`,
-              { parts }
-            );
-
-            return result;
-          } catch {
-            return Promise.reject("Error completing multipart upload");
-          }
-        },
-      });
-
-      uppyRef.current = instance;
-    }
-
-    // Cleanup function
-    return () => {
-      if (uppyRef.current) {
-        uppyRef.current.destroy();
-        uppyRef.current = null;
-      }
-    };
-  }, [videoId]); // Only recreate when videoId changes
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Handle file added event with useCallback to prevent recreation
   const handleFileAdded = useCallback(async () => {
@@ -204,28 +61,175 @@ export function VideoUploader({
     }
   }, [onSuccess, onError]);
 
-  // Set up event listeners
+  // Initialize Uppy instance only once
   useEffect(() => {
-    if (!uppyRef.current) return;
+    let isMounted = true;
 
-    uppyRef.current.on("file-added", handleFileAdded);
+    const initializeUppy = () => {
+      if (!uppyRef.current) {
+        const instance = new Uppy({
+          restrictions: {
+            maxNumberOfFiles: 1,
+            maxFileSize: 30 * 1024 * 1024 * 1024, // 30GB
+            allowedFileTypes: ["video/*"],
+          },
+          autoProceed: false,
+        }).use(AwsS3, {
+          shouldUseMultipart: true,
+          async createMultipartUpload(file: UppyFile<Meta, Body>) {
+            const extension = file.extension;
+
+            try {
+              const result = await apiPost<{ key: string; uploadId: string }>(
+                "/api/s3/multipart",
+                {
+                  key: `${videoId}/video.${extension}`,
+                  type: file.type,
+                  metadata: file.meta,
+                }
+              );
+              return result;
+            } catch (error) {
+              return Promise.reject(error);
+            }
+          },
+
+          async abortMultipartUpload(
+            _file: UppyFile<Meta, Body>,
+            options: UploadResultWithSignal
+          ) {
+            const keyEnc = encodeURIComponent(options.key);
+            const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
+
+            try {
+              await apiDelete(`/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`);
+            } catch {
+              return Promise.reject("Error aborting multipart upload");
+            }
+          },
+
+          async signPart(
+            _file: UppyFile<Meta, Body>,
+            {
+              uploadId,
+              key,
+              partNumber,
+              signal,
+            }: {
+              uploadId: string;
+              key: string;
+              partNumber: number;
+              signal?: AbortSignal;
+            }
+          ) {
+            if (signal?.aborted) {
+              const err = new DOMException(
+                "The operation was aborted",
+                "AbortError"
+              );
+              throw err;
+            }
+
+            if (uploadId == null || key == null || partNumber == null) {
+              throw new Error(
+                "Cannot sign without a key, an uploadId, and a partNumber"
+              );
+            }
+
+            const keyEnc = encodeURIComponent(key);
+
+            try {
+              const result = await apiGet<{
+                url: string;
+                expires: number;
+              }>(`/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`);
+
+              return result;
+            } catch {
+              return Promise.reject("Error signing part");
+            }
+          },
+
+          async listParts(
+            _file: UppyFile<Meta, Body>,
+            options: UploadResultWithSignal
+          ) {
+            const keyEnc = encodeURIComponent(options.key);
+            const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
+
+            try {
+              const result = await apiGet<AwsS3Part[]>(
+                `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`
+              );
+
+              return result;
+            } catch {
+              return Promise.reject("Error listing parts");
+            }
+          },
+
+          async completeMultipartUpload(
+            _file: UppyFile<Meta, Body>,
+            {
+              key,
+              uploadId,
+              parts,
+            }: {
+              key: string;
+              uploadId: string;
+              parts: AwsS3Part[];
+            }
+          ) {
+            const keyEnc = encodeURIComponent(key);
+            const uploadIdEnc = encodeURIComponent(uploadId);
+
+            try {
+              const result = await apiPost<{ location?: string }>(
+                `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}`,
+                { parts }
+              );
+
+              return result;
+            } catch {
+              return Promise.reject("Error completing multipart upload");
+            }
+          },
+        });
+
+        instance.on("file-added", handleFileAdded);
+
+        uppyRef.current = instance;
+        if (isMounted) {
+          setIsInitialized(true);
+        }
+      }
+    };
+
+    initializeUppy();
 
     // Cleanup function
     return () => {
+      isMounted = false;
       if (uppyRef.current) {
-        uppyRef.current.off("file-added", handleFileAdded);
+        uppyRef.current.destroy();
+        uppyRef.current = null;
+        setIsInitialized(false);
       }
     };
-  }, [handleFileAdded]);
+  }, [videoId, handleFileAdded]); // Only recreate when videoId changes
 
-  if (!uppyRef.current) {
-    return null; // Don't render until Uppy is initialized
+  if (!isInitialized) {
+    return (
+      <div className="w-full max-w-3xl mx-auto h-[200px] flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-gray-500">Initializing uploader...</div>
+      </div>
+    );
   }
 
   return (
     <div className="w-full max-w-3xl mx-auto">
       <Dashboard
-        uppy={uppyRef.current}
+        uppy={uppyRef.current!}
         hideUploadButton={true}
         doneButtonHandler={undefined}
         proudlyDisplayPoweredByUppy={false}
