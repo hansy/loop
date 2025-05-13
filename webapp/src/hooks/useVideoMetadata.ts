@@ -77,27 +77,37 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
 
   const createPlaybackAccessObject = useCallback(() => {
     return {
-      acl: accessControlState,
+      acl: accessControlState as unknown as Record<string, unknown>,
       type: "lit" as const,
     };
   }, [accessControlState]);
 
   const createMetadata = useCallback(() => {
-    return {
+    const baseMetadata = {
       id,
       tokenId: BigInt(0),
       title,
       creator: address!,
       description,
-      visibility,
-      price: createPriceObject(),
-      playbackAccess:
-        visibility === "protected" ? createPlaybackAccessObject() : undefined,
       isDownloadable,
       isNSFW,
       coverImage,
+      price: createPriceObject(),
       sources: createSourcesObject(),
     };
+
+    if (visibility === "protected") {
+      return {
+        ...baseMetadata,
+        visibility: "protected" as const,
+        playbackAccess: createPlaybackAccessObject(),
+      } as VideoMetadata;
+    }
+
+    return {
+      ...baseMetadata,
+      visibility: "public" as const,
+    } as VideoMetadata;
   }, [
     title,
     description,
