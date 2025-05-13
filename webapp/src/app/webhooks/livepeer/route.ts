@@ -117,8 +117,9 @@ async function handleLivepeerWebhook(
 }
 
 const webhookOptions: WebhookVerificationOptions = {
-  verifySignature: verifyLivepeerWebhook,
+  verifySignatureFunc: verifyLivepeerWebhook,
   signatureHeader: "livepeer-signature",
+  verifySignature: false,
 };
 
 export const POST = handleWebhook<LivepeerWebhookPayload>(

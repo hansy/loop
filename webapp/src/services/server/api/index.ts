@@ -17,7 +17,6 @@ interface ErrorResponse {
     message: string;
     code?: string;
     details?: unknown;
-    stack?: string; // Optionally include stack in non-production environments
   };
 }
 
@@ -105,11 +104,6 @@ export function errorResponse(
     console.error(`Unknown Error (${statusCode}):`, error);
   }
 
-  // Optionally add stack trace to response in non-production environments for easier debugging
-  if (!IS_PRODUCTION && error instanceof Error && responseBody.error) {
-    responseBody.error.stack = error.stack;
-  }
-
   return NextResponse.json(responseBody, { status: statusCode });
 }
 
@@ -165,7 +159,7 @@ export interface WebhookVerificationOptions {
    * @param headers - All request headers for additional context
    * @returns Whether the signature is valid
    */
-  verifySignature: (
+  verifySignatureFunc: (
     payload: string,
     signature: string,
     headers: Headers
@@ -174,6 +168,7 @@ export interface WebhookVerificationOptions {
    * The header name containing the webhook signature
    */
   signatureHeader: string;
+  verifySignature: boolean;
 }
 
 /**
@@ -194,26 +189,31 @@ export function handleWebhook<TPayload = unknown>(
   options: WebhookVerificationOptions
 ): (req: NextRequest) => Promise<NextResponse | Response> {
   return async (req) => {
+    const rawBody = await req.text();
+
     try {
-      // Get the signature from headers
-      const signature = req.headers.get(options.signatureHeader);
-      if (!signature) {
-        return errorResponse(
-          new AppError("Missing webhook signature", 401, "MISSING_SIGNATURE"),
-          401
-        );
-      }
+      if (options.verifySignature) {
+        // Get the signature from headers
+        const signature = req.headers.get(options.signatureHeader);
+        if (!signature) {
+          return errorResponse(
+            new AppError("Missing webhook signature", 401, "MISSING_SIGNATURE"),
+            401
+          );
+        }
 
-      // Get the raw body as text for signature verification
-      const rawBody = await req.text();
-
-      // Verify the webhook signature
-      const isValid = options.verifySignature(rawBody, signature, req.headers);
-      if (!isValid) {
-        return errorResponse(
-          new AppError("Invalid signature", 401, "INVALID_SIGNATURE"),
-          401
+        // Verify the webhook signature
+        const isValid = options.verifySignatureFunc(
+          rawBody,
+          signature,
+          req.headers
         );
+        if (!isValid) {
+          return errorResponse(
+            new AppError("Invalid signature", 401, "INVALID_SIGNATURE"),
+            401
+          );
+        }
       }
 
       // Parse the body as JSON for processing
