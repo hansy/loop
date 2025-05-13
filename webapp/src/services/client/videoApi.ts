@@ -1,4 +1,4 @@
-import { apiPost } from "./";
+import { apiPost } from ".";
 
 /**
  * Defines the structure of video metadata for upload

@@ -1,65 +1,64 @@
-import { z } from "zod";
+import type { VideoSource } from "@/types";
+import { VIDEO_BUCKET } from "./s3";
+import { AppError } from "../api/error";
 
-const LIVEPEER_API_KEY = process.env.LIVEPEER_API_KEY;
-const LIVEPEER_API_URL = "https://livepeer.com/api/v1";
+const API_BASE = "https://livepeer.studio/api";
 
-// Response schema for Livepeer API
-const transcodeResponseSchema = z.object({
-  taskId: z.string(),
-  status: z.string(),
-  // Add other fields as needed based on Livepeer's API response
-});
-
-/**
- * Sends a video to Livepeer for transcoding
- * @param sourceUrl - The URL of the source video file
- * @returns The transcode task ID and status
- */
-export async function sendToLivepeer(sourceUrl: string) {
-  if (!LIVEPEER_API_KEY) {
-    throw new Error("Livepeer API key is not configured");
-  }
-
-  const response = await fetch(`${LIVEPEER_API_URL}/transcode`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LIVEPEER_API_KEY}`,
-      "Content-Type": "application/json",
+export const transcode = async (id: string, source: VideoSource) => {
+  const ACCESS_KEY = process.env.S3_VIDEO_TRANSCODE_ACCESS_KEY;
+  const ACCESS_SECRET = process.env.S3_VIDEO_TRANSCODE_SECRET_KEY;
+  const ENDPOINT = process.env.S3_VIDEO_UPLOAD_ENDPOINT;
+  const params = {
+    input: {
+      type: "s3",
+      endpoint: ENDPOINT,
+      credentials: {
+        accessKeyId: ACCESS_KEY,
+        secretAccessKey: ACCESS_SECRET,
+      },
+      bucket: VIDEO_BUCKET,
+      path: `/${source.id}`,
     },
-    body: JSON.stringify({
-      sourceUrl,
-      // Add other Livepeer-specific configuration as needed
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Livepeer API error: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return transcodeResponseSchema.parse(data);
-}
-
-/**
- * Checks the status of a transcode task
- * @param taskId - The ID of the transcode task
- * @returns The current status of the transcode task
- */
-export async function checkTranscodeStatus(taskId: string) {
-  if (!LIVEPEER_API_KEY) {
-    throw new Error("Livepeer API key is not configured");
-  }
-
-  const response = await fetch(`${LIVEPEER_API_URL}/transcode/${taskId}`, {
-    headers: {
-      Authorization: `Bearer ${LIVEPEER_API_KEY}`,
+    storage: {
+      type: "s3",
+      endpoint: ENDPOINT,
+      credentials: {
+        accessKeyId: ACCESS_KEY,
+        secretAccessKey: ACCESS_SECRET,
+      },
+      bucket: VIDEO_BUCKET,
     },
-  });
+    outputs: {
+      hls: {
+        path: `/${id}/data/hls`,
+      },
+    },
+  };
 
-  if (!response.ok) {
-    throw new Error(`Livepeer API error: ${response.statusText}`);
+  try {
+    const response = await fetch(`${API_BASE}/transcode`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.LIVEPEER_API_KEY}`,
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      throw new AppError("Failed to send transcoding request", 500);
+    }
+
+    const { id: taskId } = await response.json();
+
+    return taskId;
+  } catch (e) {
+    throw new AppError(
+      "Failed to send transcoding request",
+      500,
+      "LIVEPEER_ERROR",
+      {
+        originalError: e,
+      }
+    );
   }
-
-  const data = await response.json();
-  return transcodeResponseSchema.parse(data);
-}
+};

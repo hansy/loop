@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { sendToLivepeer } from "@/services/server/external/livepeer";
+import { transcode } from "@/services/server/external/livepeer";
 import { AppError } from "@/services/server/api/error";
 import { handleApiRoute, successResponse } from "@/services/server/api";
 import { User as PrivyUserType } from "@privy-io/server-auth";
@@ -44,11 +44,11 @@ export const POST = handleApiRoute(
     });
 
     // Send transcode request to Livepeer
-    const transcodeResponse = await sendToLivepeer(metadata.sources[0].src);
+    const transcodeTaskId = await transcode(video.id, metadata.sources[0]);
 
     // Update video record with transcode task ID
     const updatedVideo = await updateVideo(video.id, {
-      transcodeTaskId: transcodeResponse.taskId,
+      transcodeTaskId,
     });
 
     return successResponse(

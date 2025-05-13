@@ -1,4 +1,4 @@
-import { apiPost } from "./"; // Adjusted import path
+import { apiPost } from "."; // Adjusted import path
 
 /**
  * Defines the expected structure of the response from the POST /api/users endpoint.
