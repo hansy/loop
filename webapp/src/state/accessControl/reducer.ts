@@ -34,7 +34,9 @@ export const initialState: AccessControlState = [
         id: "owner-rule",
         chain: camelCaseString(DEFAULT_CHAIN.name),
         contract: CONTRACT_ADDRESSES.VIDEO_NFT,
-        tokenId: "PLACEHOLDER",
+        subtype: "ERC1155",
+        tokenId: "PLACEHOLDER", // Temporary value, will be replaced with actual video NFT token ID after minting
+        numTokens: 1,
       },
       {
         type: "operator",
@@ -45,7 +47,13 @@ export const initialState: AccessControlState = [
         type: "paywall",
         id: "paywall-rule",
         chain: camelCaseString(DEFAULT_CHAIN.name),
+        tokenId: "PLACEHOLDER",
       },
+      {
+        type: "operator",
+        id: "inner-operator",
+        operator: "or",
+      } as OperatorNode,
       {
         type: "group",
         id: "user-group",

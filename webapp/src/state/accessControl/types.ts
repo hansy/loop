@@ -36,14 +36,17 @@ export type TokenRule = ERC20Rule | ERC721Rule | ERC1155Rule;
 export interface OwnerRule extends BaseNode {
   type: "owner";
   chain: string;
-  contract: string;
-  numTokens: number;
+  contract: string; // The video NFT contract address
+  subtype: "ERC1155"; // Specifically for video NFTs
+  tokenId: string; // The specific video NFT token ID
+  numTokens: 1; // Must own exactly 1 token
 }
 
 // ---------- Paywall Rule ----------
 export interface PaywallRule extends BaseNode {
   type: "paywall";
   chain: string;
+  tokenId: string; // Required to check if user has purchased this specific video
 }
 
 // ---------- Lit Action Rule ----------

@@ -4,6 +4,7 @@ import { useAccessControl } from "@/contexts/AccessControlContext";
 import { VideoMetadata } from "@/lib/common/validation/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
 import { VideoMetadataSchema } from "@/lib/common/validation/videoSchemas";
+import { convertToLitFormat } from "@/state/accessControl/litConversion";
 
 interface UseVideoMetadataReturn {
   metadata: VideoMetadata;
@@ -76,8 +77,15 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
   }, [videoKey, videoType]);
 
   const createPlaybackAccessObject = useCallback(() => {
+    const litConditions = convertToLitFormat(accessControlState);
+
+    // Validate the converted conditions
+    // if (!validateLitConditions(litConditions)) {
+    //   throw new Error("Invalid access control conditions");
+    // }
+
     return {
-      acl: accessControlState as unknown as Record<string, unknown>,
+      acl: litConditions as unknown as Record<string, unknown>,
       type: "lit" as const,
     };
   }, [accessControlState]);
