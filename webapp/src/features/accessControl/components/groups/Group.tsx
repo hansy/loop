@@ -30,7 +30,6 @@ export function Group({ group }: GroupProps) {
   );
 
   const handleRemoveGroup = (groupId: string) => {
-    console.log("[Group] Removing group:", groupId);
     dispatch({
       type: "REMOVE_GROUP",
       groupId,
@@ -42,11 +41,6 @@ export function Group({ group }: GroupProps) {
     ruleId: string,
     updates: Partial<RuleNode>
   ) => {
-    console.log("[Group] Updating rule:", {
-      groupId,
-      ruleId,
-      updates,
-    });
     dispatch({
       type: "UPDATE_RULE",
       groupId,
@@ -56,7 +50,6 @@ export function Group({ group }: GroupProps) {
   };
 
   const handleRemoveRule = (groupId: string, ruleId: string) => {
-    console.log("[Group] Removing rule:", { groupId, ruleId });
     dispatch({
       type: "REMOVE_RULE",
       groupId,
@@ -69,11 +62,6 @@ export function Group({ group }: GroupProps) {
     operator: LogicalOperator,
     targetGroupId: string
   ) => {
-    console.log("[Group] Updating operator:", {
-      operatorId,
-      operator,
-      targetGroupId,
-    });
     dispatch({
       type: "UPDATE_OPERATOR",
       groupId: targetGroupId,
@@ -84,23 +72,12 @@ export function Group({ group }: GroupProps) {
 
   // Handler for saving a rule (add or update)
   const handleSaveRule = (rule: RuleNode) => {
-    console.log("[Group] handleSaveRule called with:", {
-      rule,
-      editingRule,
-      editingGroupId,
-    });
-
     if (!editingGroupId) {
       console.error("[Group] No editing group ID found");
       return;
     }
 
     if (editingRule) {
-      console.log("[Group] Updating existing rule:", {
-        originalRule: editingRule,
-        newRule: rule,
-        groupId: editingGroupId,
-      });
       dispatch({
         type: "UPDATE_RULE",
         groupId: editingGroupId,
@@ -108,10 +85,6 @@ export function Group({ group }: GroupProps) {
         updates: rule,
       });
     } else {
-      console.log("[Group] Adding new rule:", {
-        rule,
-        groupId: editingGroupId,
-      });
       // Don't include id when adding
       const ruleWithoutId = { ...rule, id: undefined };
       delete ruleWithoutId.id;
@@ -172,13 +145,6 @@ export function Group({ group }: GroupProps) {
                               key={ruleNode.id}
                               rule={ruleNode}
                               onClick={() => {
-                                console.log(
-                                  "[Group] Rule clicked for editing:",
-                                  {
-                                    rule: ruleNode,
-                                    groupId: node.id,
-                                  }
-                                );
                                 setEditingRule(ruleNode);
                                 setEditingGroupId(node.id);
                                 setSlideoverOpen(true);
@@ -194,11 +160,8 @@ export function Group({ group }: GroupProps) {
                     </div>
                     <div className="relative">
                       <button
+                        type="button"
                         onClick={() => {
-                          console.log(
-                            "[Group] Add Rule clicked for group:",
-                            node.id
-                          );
                           setEditingRule(undefined);
                           setEditingGroupId(node.id);
                           setSlideoverOpen(true);
@@ -211,6 +174,7 @@ export function Group({ group }: GroupProps) {
                   </div>
                   <div className="flex items-center border-l border-gray-200 bg-gray-100">
                     <button
+                      type="button"
                       onClick={() => handleRemoveGroup(node.id)}
                       className="flex h-full w-full items-center justify-center rounded-r-lg text-gray-400 hover:bg-gray-200 hover:text-gray-500 px-4 "
                       aria-label="Remove group"
@@ -228,7 +192,6 @@ export function Group({ group }: GroupProps) {
         <AddRuleSlideover
           open={slideoverOpen}
           onClose={() => {
-            console.log("[Group] Slideover closing, clearing state");
             setEditingRule(undefined);
             setEditingGroupId(undefined);
             setSlideoverOpen(false);

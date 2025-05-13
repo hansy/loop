@@ -46,6 +46,8 @@ export default function UploadForm() {
     setVisibility,
   } = useVideoMetadata();
 
+  console.log(metadata);
+
   const handlePrivacyChange = (setting: PrivacySetting) => {
     setVisibility(setting.id);
   };
@@ -150,26 +152,32 @@ export default function UploadForm() {
               {metadata.visibility === "protected" && (
                 <div>
                   <h2 className="text-base/7 font-semibold text-gray-900">
-                    Access Control
+                    Paywall
                   </h2>
                   <p className="mt-1 text-sm/6 text-gray-600">
-                    Define who can access your video.
+                    Set a price for your video.
+                  </p>
+                  <div className="my-4">
+                    <PaywallSettings
+                      price={
+                        metadata.price?.amount
+                          ? Number(metadata.price.amount) / 1e6
+                          : 0
+                      }
+                      onPriceChange={setPrice}
+                    />
+                  </div>
+                  <h2 className="text-base/7 font-semibold text-gray-900">
+                    Advanced Access Control
+                  </h2>
+                  <p className="mt-1 text-sm/6 text-gray-600">
+                    Add additional access rules to your video.
                   </p>
                   <div className="mt-6">
                     <AccessControlBuilder />
                   </div>
                 </div>
               )}
-
-              <PaywallSettings
-                price={
-                  metadata.price?.amount
-                    ? Number(metadata.price.amount) / 1e6
-                    : 0
-                }
-                onPriceChange={setPrice}
-                disabled={metadata.visibility === "public"}
-              />
             </div>
           </div>
         </div>
