@@ -35,18 +35,12 @@ export function VideoUploader({
   onSuccess,
   onError,
 }: VideoUploaderProps) {
-  console.log("[VideoUploader] Rendering with videoId:", videoId);
-
   // Use a ref to maintain the Uppy instance across renders
   const uppyRef = useRef<Uppy | null>(null);
 
   // Initialize Uppy instance only once
   useEffect(() => {
     if (!uppyRef.current) {
-      console.log(
-        "[VideoUploader] Creating new Uppy instance for videoId:",
-        videoId
-      );
       const instance = new Uppy({
         restrictions: {
           maxNumberOfFiles: 1,
@@ -54,14 +48,9 @@ export function VideoUploader({
           allowedFileTypes: ["video/*"],
         },
         autoProceed: false,
-        debug: true, // Enable Uppy debug mode
       }).use(AwsS3, {
         shouldUseMultipart: true,
         async createMultipartUpload(file: UppyFile<Meta, Body>) {
-          console.log(
-            "[VideoUploader] Creating multipart upload for file:",
-            file.name
-          );
           const extension = file.extension;
 
           try {
@@ -73,14 +62,9 @@ export function VideoUploader({
                 metadata: file.meta,
               }
             );
-            console.log("[VideoUploader] Multipart upload created:", result);
             return result;
           } catch (error) {
-            console.error(
-              "[VideoUploader] Error creating multipart upload:",
-              error
-            );
-            return Promise.reject("Error creating multipart upload");
+            return Promise.reject(error);
           }
         },
 
@@ -88,17 +72,12 @@ export function VideoUploader({
           _file: UppyFile<Meta, Body>,
           options: UploadResultWithSignal
         ) {
-          console.log("[VideoUploader] Aborting multipart upload:", options);
           const keyEnc = encodeURIComponent(options.key);
           const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
 
           try {
             await apiDelete(`/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`);
-          } catch (error) {
-            console.error(
-              "[VideoUploader] Error aborting multipart upload:",
-              error
-            );
+          } catch {
             return Promise.reject("Error aborting multipart upload");
           }
         },
@@ -117,11 +96,6 @@ export function VideoUploader({
             signal?: AbortSignal;
           }
         ) {
-          console.log("[VideoUploader] Signing part:", {
-            uploadId,
-            key,
-            partNumber,
-          });
           if (signal?.aborted) {
             const err = new DOMException(
               "The operation was aborted",
@@ -143,10 +117,9 @@ export function VideoUploader({
               url: string;
               expires: number;
             }>(`/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`);
-            console.log("[VideoUploader] Part signed successfully:", result);
+
             return result;
-          } catch (error) {
-            console.error("[VideoUploader] Error signing part:", error);
+          } catch {
             return Promise.reject("Error signing part");
           }
         },
@@ -155,7 +128,6 @@ export function VideoUploader({
           _file: UppyFile<Meta, Body>,
           options: UploadResultWithSignal
         ) {
-          console.log("[VideoUploader] Listing parts:", options);
           const keyEnc = encodeURIComponent(options.key);
           const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
 
@@ -163,10 +135,9 @@ export function VideoUploader({
             const result = await apiGet<AwsS3Part[]>(
               `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`
             );
-            console.log("[VideoUploader] Parts listed:", result);
+
             return result;
-          } catch (error) {
-            console.error("[VideoUploader] Error listing parts:", error);
+          } catch {
             return Promise.reject("Error listing parts");
           }
         },
@@ -183,11 +154,6 @@ export function VideoUploader({
             parts: AwsS3Part[];
           }
         ) {
-          console.log("[VideoUploader] Completing multipart upload:", {
-            key,
-            uploadId,
-            parts,
-          });
           const keyEnc = encodeURIComponent(key);
           const uploadIdEnc = encodeURIComponent(uploadId);
 
@@ -196,33 +162,12 @@ export function VideoUploader({
               `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}`,
               { parts }
             );
-            console.log("[VideoUploader] Multipart upload completed:", result);
+
             return result;
-          } catch (error) {
-            console.error(
-              "[VideoUploader] Error completing multipart upload:",
-              error
-            );
+          } catch {
             return Promise.reject("Error completing multipart upload");
           }
         },
-      });
-
-      // Add event listeners for debugging
-      instance.on("upload", (data) => {
-        console.log("[VideoUploader] Upload started:", data);
-      });
-
-      instance.on("upload-success", (file, response) => {
-        console.log("[VideoUploader] Upload success:", { file, response });
-      });
-
-      instance.on("upload-error", (file, error) => {
-        console.error("[VideoUploader] Upload error:", { file, error });
-      });
-
-      instance.on("complete", (result) => {
-        console.log("[VideoUploader] Upload complete:", result);
       });
 
       uppyRef.current = instance;
@@ -231,7 +176,6 @@ export function VideoUploader({
     // Cleanup function
     return () => {
       if (uppyRef.current) {
-        console.log("[VideoUploader] Cleaning up Uppy instance");
         uppyRef.current.destroy();
         uppyRef.current = null;
       }
@@ -242,10 +186,8 @@ export function VideoUploader({
   const handleFileAdded = useCallback(async () => {
     if (!uppyRef.current) return;
 
-    console.log("[VideoUploader] File added, starting upload");
     try {
       const uploadResult = await uppyRef.current.upload();
-      console.log("[VideoUploader] Upload result:", uploadResult);
 
       if (uploadResult?.successful?.[0]) {
         const uploadedFile = uploadResult.successful[0];
@@ -253,16 +195,11 @@ export function VideoUploader({
         const key = uploadedFile.s3Multipart?.key;
         const type = uploadedFile.type;
 
-        console.log(
-          "[VideoUploader] Upload successful, calling onSuccess with:",
-          { key, type }
-        );
         if (key && type) {
           onSuccess(key, type);
         }
       }
     } catch (e) {
-      console.error("[VideoUploader] Upload error:", e);
       onError?.(e instanceof Error ? e : new Error(String(e)));
     }
   }, [onSuccess, onError]);
@@ -271,13 +208,11 @@ export function VideoUploader({
   useEffect(() => {
     if (!uppyRef.current) return;
 
-    console.log("[VideoUploader] Setting up event listeners");
     uppyRef.current.on("file-added", handleFileAdded);
 
     // Cleanup function
     return () => {
       if (uppyRef.current) {
-        console.log("[VideoUploader] Cleaning up event listeners");
         uppyRef.current.off("file-added", handleFileAdded);
       }
     };

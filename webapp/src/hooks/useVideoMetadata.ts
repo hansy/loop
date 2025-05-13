@@ -1,9 +1,8 @@
 import { useState, useCallback, useMemo } from "react";
 import { useAccount } from "wagmi";
 import { useAccessControl } from "@/contexts/AccessControlContext";
-import { VideoMetadata } from "@/validations/videoSchemas";
+import { VideoMetadata, VideoMetadataSchema } from "@/validations/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
-import { VideoMetadataSchema } from "@/validations/videoSchemas";
 import { convertToLitFormat } from "@/features/accessControl/utils/litConversion";
 
 interface UseVideoMetadataReturn {
@@ -48,7 +47,7 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
   const [price, setPrice] = useState(0);
   const [isDownloadable, setIsDownloadable] = useState(false);
   const [isNSFW, setIsNSFW] = useState(false);
-  const [coverImage, setCoverImage] = useState<string>("");
+  const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
 
   // Video upload state
   const [videoKey, setVideoKey] = useState<string | undefined>(undefined);
@@ -56,9 +55,9 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
 
   const createPriceObject = useCallback(() => {
     return {
-      amount: visibility === "protected" ? BigInt(price * 1e6) : BigInt(0),
+      amount: visibility === "protected" ? String(BigInt(price * 1e6)) : "0",
       currency: "USDC" as const,
-      denominatedSubunits: BigInt(1e6),
+      denominatedSubunits: String(BigInt(1e6)),
     };
   }, [price, visibility]);
 
@@ -93,7 +92,7 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
   const createMetadata = useCallback(() => {
     const baseMetadata = {
       id,
-      tokenId: BigInt(0),
+      tokenId: "PLACEHOLDER",
       title,
       creator: address!,
       description,

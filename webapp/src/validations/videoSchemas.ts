@@ -22,9 +22,9 @@ const VideoSourceSchema = z.object({
  * Schema for validating video price.
  */
 const VideoPriceSchema = z.object({
-  amount: z.bigint(),
+  amount: z.string(),
   currency: z.literal("USDC"),
-  denominatedSubunits: z.bigint(),
+  denominatedSubunits: z.string(),
 });
 
 /**
@@ -42,7 +42,7 @@ const VideoAccessSchema = z.object({
  */
 const VideoMetadataBaseSchema = z.object({
   id: z.string().uuid(),
-  tokenId: z.bigint(),
+  tokenId: z.string(),
   title: z.string().min(1),
   creator: z.string(),
   description: z.string().optional(),

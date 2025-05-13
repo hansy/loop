@@ -1,16 +1,5 @@
 import { apiPost } from ".";
-
-/**
- * Defines the structure of video metadata for upload
- */
-export interface VideoMetadata {
-  title: string;
-  description?: string;
-  sourceUrl: string;
-  duration: number;
-  thumbnailUrl?: string;
-  visibility?: "public" | "protected";
-}
+import { VideoMetadata } from "@/validations/videoSchemas";
 
 /**
  * Defines the response structure from the video upload endpoint

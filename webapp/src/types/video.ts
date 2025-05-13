@@ -34,9 +34,9 @@ export interface VideoCoverImage {
  * Represents the price of a video.
  */
 export interface VideoPrice {
-  amount: bigint;
+  amount: string;
   currency: "USDC";
-  denominatedSubunits: bigint;
+  denominatedSubunits: string;
 }
 
 /**
@@ -54,7 +54,7 @@ export interface VideoAccess {
  */
 interface VideoMetadataBase {
   id: string;
-  tokenId: bigint;
+  tokenId: string;
   title: string;
   creator: string;
   description?: string;

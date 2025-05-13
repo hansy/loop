@@ -25,6 +25,7 @@ export const POST = handleApiRoute(
 
     // Validate the metadata
     const validationResult = VideoMetadataSchema.safeParse(body);
+
     if (!validationResult.success) {
       throw new AppError(
         "Invalid video metadata provided",
@@ -39,7 +40,7 @@ export const POST = handleApiRoute(
     // Create video record using the service
     const video = await createVideo({
       id: uuidv7(),
-      userId: privyUser.id,
+      userId: privyUser.customMetadata.appUserId as string,
       metadata,
     });
 

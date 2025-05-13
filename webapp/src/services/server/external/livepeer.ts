@@ -40,12 +40,16 @@ export const transcode = async (id: string, source: VideoSource) => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.LIVEPEER_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(params),
     });
 
     if (!response.ok) {
-      throw new AppError("Failed to send transcoding request", 500);
+      const body = await response.json();
+      throw new AppError("Transcoding request failed", 500, "LIVEPEER_ERROR", {
+        errors: body.errors,
+      });
     }
 
     const { id: taskId } = await response.json();

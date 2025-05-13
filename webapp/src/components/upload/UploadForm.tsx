@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Container from "@/components/layout/Container";
 import { useRouter } from "next/navigation";
 import { VideoUploader } from "@/components/upload/VideoUploader";
@@ -12,8 +12,9 @@ import PrivacySettings, {
 import PaywallSettings from "@/components/upload/PaywallSettings";
 import { AccessControlBuilder } from "@/features/accessControl/components";
 import { useVideoMetadata } from "@/hooks/useVideoMetadata";
-import { toast } from "sonner";
+import { toast } from "react-toastify";
 import { ZodError } from "zod";
+import { uploadVideo } from "@/services/client/videoApi";
 
 const privacySettings: PrivacySetting[] = [
   {
@@ -50,32 +51,29 @@ export default function UploadForm() {
     setVisibility(setting.id);
   };
 
-  const handleVideoUploadSuccess = (key: string, type: string) => {
-    console.log("[UploadForm] Video upload success:", { key, type });
-    // Update metadata with video source
-    setVideoKey(key);
-    setVideoType(type);
-  };
+  const handleVideoUploadSuccess = useCallback(
+    (key: string, type: string) => {
+      setVideoKey(key);
+      setVideoType(type);
+    },
+    [setVideoKey, setVideoType]
+  );
 
-  const handleVideoUploadError = (error: Error) => {
-    console.error("[UploadForm] Video upload error:", error);
+  const handleVideoUploadError = useCallback((error: Error) => {
     toast.error("Failed to upload video: " + error.message);
-  };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[UploadForm] Form submission started");
     setErrors({});
     setIsSubmitting(true);
 
     try {
-      const metadata = await validateAndFormatMetadata();
-      console.log("[UploadForm] Metadata validated:", metadata);
+      const data = await validateAndFormatMetadata();
 
-      // TODO: Send to API
-      console.log("Submitting video metadata:", metadata);
+      await uploadVideo(data);
 
-      toast.success("Video metadata submitted successfully");
+      toast.success("Video uploaded successfully");
       router.push("/library");
     } catch (error) {
       console.error("[UploadForm] Form submission error:", error);
@@ -88,11 +86,12 @@ export default function UploadForm() {
               fieldErrors[err.path[0]] = err.message;
             }
           });
+          toast.error(error.message);
           console.log("[UploadForm] Validation errors:", fieldErrors);
           setErrors(fieldErrors);
         } else {
           // Handle other errors
-          toast.error("Failed to submit video metadata");
+          toast.error("Failed to upload video");
           console.error("Error submitting video:", error);
         }
       }
