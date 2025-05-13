@@ -11,7 +11,7 @@ import "@uppy/dashboard/dist/style.min.css";
 
 interface VideoUploaderProps {
   videoId: string;
-  onSuccess?: (key: string, type: string) => void;
+  onSuccess: (key: string, type: string) => void;
   onError?: (error: Error) => void;
 }
 
@@ -175,11 +175,12 @@ export function VideoUploader({
 
         if (uploadResult?.successful?.[0]) {
           const uploadedFile = uploadResult.successful[0];
-          const key = uploadedFile.response?.body?.key;
+          // @ts-expect-error - Uppy file is not typed correctly
+          const key = uploadedFile.s3Multipart?.key;
           const type = uploadedFile.type;
 
           if (key && type) {
-            onSuccess?.(key, type);
+            onSuccess(key, type);
           }
         }
       } catch (e) {

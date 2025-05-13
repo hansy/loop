@@ -1,29 +1,25 @@
-import React from "react";
+import { useState } from "react";
 import { Switch } from "@headlessui/react";
 
 interface PaywallSettingsProps {
-  isPaywalled: boolean;
   price: number;
-  onPaywallChange: (isPaywalled: boolean) => void;
   onPriceChange: (price: number) => void;
   disabled?: boolean;
 }
 
 /**
  * PaywallSettings component for configuring video paywall settings
- * @param isPaywalled - Whether the video is paywalled
  * @param price - The price of the video in USDC
- * @param onPaywallChange - Callback when paywall toggle changes
  * @param onPriceChange - Callback when price changes
  * @param disabled - Whether the paywall settings are disabled
  */
 export default function PaywallSettings({
-  isPaywalled,
   price,
-  onPaywallChange,
   onPriceChange,
   disabled = false,
 }: PaywallSettingsProps) {
+  const [isPaywalled, setIsPaywalled] = useState(false);
+
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow empty input for better UX
@@ -47,8 +43,8 @@ export default function PaywallSettings({
           Enable Paywall
         </label>
         <Switch
-          checked={isPaywalled}
-          onChange={onPaywallChange}
+          defaultChecked={isPaywalled}
+          onChange={() => setIsPaywalled(!isPaywalled)}
           disabled={disabled}
           className="group relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:outline-hidden data-checked:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >

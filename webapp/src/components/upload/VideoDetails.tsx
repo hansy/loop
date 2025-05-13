@@ -2,7 +2,7 @@ import React from "react";
 
 interface VideoDetailsProps {
   title: string;
-  description: string;
+  description?: string;
   onTitleChange: (title: string) => void;
   onDescriptionChange: (description: string) => void;
   error?: string;
