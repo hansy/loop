@@ -33,6 +33,7 @@ export default function PaywallSettings({
     }
   };
 
+  // Toggle the paywall state and set the price to 0 if the paywall is disabled
   const handlePaywallToggle = () => {
     const newIsPaywalled = !isPaywalled;
     setIsPaywalled(newIsPaywalled);
