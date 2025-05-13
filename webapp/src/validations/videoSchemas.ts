@@ -51,7 +51,7 @@ const VideoMetadataBaseSchema = z.object({
   isNSFW: z.boolean(),
   price: VideoPriceSchema,
   sources: z.array(VideoSourceSchema).min(1, "Video must be uploaded first"),
-  coverImage: z.string().url().optional(),
+  coverImage: z.string().optional(),
   playbackAccess: VideoAccessSchema.optional(),
 });
 
