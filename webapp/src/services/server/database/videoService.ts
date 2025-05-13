@@ -122,3 +122,29 @@ export async function updateVideo(
     );
   }
 }
+
+/**
+ * Retrieves a video by its Livepeer transcode task ID.
+ * This function is primarily used in webhook handlers to find videos
+ * associated with completed or failed transcoding tasks.
+ *
+ * @param {string} taskId - The Livepeer transcode task ID to search for
+ * @returns {Promise<Video | undefined>} The video object if found, undefined otherwise
+ * @throws {AppError} If a database error occurs during the query
+ */
+export const getVideoByTranscodeTaskId = async (taskId: string) => {
+  try {
+    return await db.query.videos.findFirst({
+      where: eq(videos.transcodeTaskId, taskId),
+    });
+  } catch (error) {
+    throw new AppError(
+      "Database query failed while getting video by transcode task ID.",
+      500,
+      "DB_QUERY_FAILED",
+      {
+        originalError: error,
+      }
+    );
+  }
+};

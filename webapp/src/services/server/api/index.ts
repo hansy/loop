@@ -153,3 +153,77 @@ export function handleApiRoute<
     }
   };
 }
+
+/**
+ * Configuration options for webhook verification
+ */
+export interface WebhookVerificationOptions {
+  /**
+   * Function to verify the webhook signature
+   * @param payload - The raw request body
+   * @param signature - The signature from the header
+   * @param headers - All request headers for additional context
+   * @returns Whether the signature is valid
+   */
+  verifySignature: (
+    payload: string,
+    signature: string,
+    headers: Headers
+  ) => boolean;
+  /**
+   * The header name containing the webhook signature
+   */
+  signatureHeader: string;
+}
+
+/**
+ * A higher-order function to wrap webhook handlers for standardized
+ * success/error responses, webhook signature verification, and error handling.
+ *
+ * @param handler The webhook handler function.
+ *                It receives the NextRequest and the verified webhook payload.
+ *                It should return a NextResponse or Response.
+ * @param options Configuration for the handler, including webhook verification settings.
+ * @returns An async function that takes NextRequest and returns a Promise<NextResponse | Response>.
+ */
+export function handleWebhook<TPayload = unknown>(
+  handler: (
+    req: NextRequest,
+    payload: TPayload
+  ) => Promise<NextResponse | Response>,
+  options: WebhookVerificationOptions
+): (req: NextRequest) => Promise<NextResponse | Response> {
+  return async (req) => {
+    try {
+      // Get the signature from headers
+      const signature = req.headers.get(options.signatureHeader);
+      if (!signature) {
+        return errorResponse(
+          new AppError("Missing webhook signature", 401, "MISSING_SIGNATURE"),
+          401
+        );
+      }
+
+      // Get the raw body as text for signature verification
+      const rawBody = await req.text();
+
+      // Verify the webhook signature
+      const isValid = options.verifySignature(rawBody, signature, req.headers);
+      if (!isValid) {
+        return errorResponse(
+          new AppError("Invalid signature", 401, "INVALID_SIGNATURE"),
+          401
+        );
+      }
+
+      // Parse the body as JSON for processing
+      const payload = JSON.parse(rawBody) as TPayload;
+
+      // Delegate to the original handler
+      return await handler(req, payload);
+    } catch (error) {
+      console.error("Error processing webhook:", error);
+      return errorResponse(error, 500);
+    }
+  };
+}
