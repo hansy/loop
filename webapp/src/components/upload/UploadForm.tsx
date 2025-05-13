@@ -46,36 +46,39 @@ export default function UploadForm() {
     setVisibility,
   } = useVideoMetadata();
 
-  console.log(metadata);
-
   const handlePrivacyChange = (setting: PrivacySetting) => {
     setVisibility(setting.id);
   };
 
   const handleVideoUploadSuccess = (key: string, type: string) => {
+    console.log("[UploadForm] Video upload success:", { key, type });
     // Update metadata with video source
     setVideoKey(key);
     setVideoType(type);
   };
 
   const handleVideoUploadError = (error: Error) => {
+    console.error("[UploadForm] Video upload error:", error);
     toast.error("Failed to upload video: " + error.message);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[UploadForm] Form submission started");
     setErrors({});
     setIsSubmitting(true);
 
     try {
       const metadata = await validateAndFormatMetadata();
+      console.log("[UploadForm] Metadata validated:", metadata);
 
       // TODO: Send to API
       console.log("Submitting video metadata:", metadata);
 
       toast.success("Video metadata submitted successfully");
-      // router.push("/library");
+      router.push("/library");
     } catch (error) {
+      console.error("[UploadForm] Form submission error:", error);
       if (error instanceof Error) {
         // Handle validation errors
         if (error instanceof ZodError) {
@@ -85,6 +88,7 @@ export default function UploadForm() {
               fieldErrors[err.path[0]] = err.message;
             }
           });
+          console.log("[UploadForm] Validation errors:", fieldErrors);
           setErrors(fieldErrors);
         } else {
           // Handle other errors
