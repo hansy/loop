@@ -56,11 +56,11 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
 
   const createPriceObject = useCallback(() => {
     return {
-      amount: BigInt(price * 1e6),
+      amount: visibility === "protected" ? BigInt(price * 1e6) : BigInt(0),
       currency: "USDC" as const,
       denominatedSubunits: BigInt(1e6),
     };
-  }, [price]);
+  }, [price, visibility]);
 
   const createSourcesObject = useCallback(() => {
     if (!videoKey || !videoType) {
