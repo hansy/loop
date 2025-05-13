@@ -4,11 +4,11 @@ This document outlines the generic flow for API requests within the web applicat
 
 ## 1. Client-Side Request Initiation
 
-- **Location**: `webapp/src/lib/client/apiClient.ts`
+- **Location**: `webapp/src/services/client/api/`
 - **Process**:
-  - The client (e.g., React components, contexts) uses helper functions (`apiGet`, `apiPost`, `apiPut`, `apiDelete`) from `apiClient.ts`.
-  - These functions wrap the native `fetch` API.
-  - The `processResponse` helper within `apiClient.ts` handles:
+  - The client (e.g., React components, contexts) uses service functions from the API services (e.g., `userApi.ts`, `videoApi.ts`).
+  - These services use helper functions (`apiGet`, `apiPost`, `apiPut`, `apiDelete`) from `lib/api/client.ts`.
+  - The `processResponse` helper within `lib/api/client.ts` handles:
     - Parsing the JSON response.
     - Checking `res.ok` for success.
     - Returning `data` from `ServerSuccessResponse<T>` on success.
@@ -19,26 +19,26 @@ This document outlines the generic flow for API requests within the web applicat
 
 - **Location**:
   - API Route Files: e.g., `webapp/src/app/api/users/route.ts`
-  - Core Logic: `webapp/src/lib/server/apiUtils.ts` (specifically `handleApiRoute`)
-  - Authentication: `webapp/src/lib/server/privy.ts` (specifically `getVerifiedPrivyUserFromCookies`)
+  - Core Logic: `webapp/src/services/server/api/` (specifically `handleApiRoute`)
+  - Authentication: `webapp/src/services/server/external/privy.ts` (specifically `getVerifiedPrivyUserFromCookies`)
 - **Process**:
-  - API route handlers (e.g., `POST` in `/api/users/route.ts`) are wrapped with the `handleApiRoute` higher-order function from `apiUtils.ts`.
-  - `handleApiRoute` now centrally manages authentication and error handling.
+  - API route handlers (e.g., `POST` in `/api/users/route.ts`) are wrapped with the `handleApiRoute` higher-order function.
+  - `handleApiRoute` centrally manages authentication and error handling.
   - **Authentication within `handleApiRoute`**:
     - It accepts an `options` parameter, where `requireAuth` defaults to `true`.
     - If `requireAuth` is true, `handleApiRoute` calls `await getVerifiedPrivyUserFromCookies(await cookies())`.
       - `cookies()` is from `next/headers`.
-      - `getVerifiedPrivyUserFromCookies` (from `privy.ts`) retrieves the `privy-id-token` from cookies and uses `privyClient.getUser({ idToken })` to verify the token and fetch the Privy user object.
+      - `getVerifiedPrivyUserFromCookies` retrieves the `privy-id-token` from cookies and uses `privyClient.getUser({ idToken })` to verify the token and fetch the Privy user object.
       - If token verification or user fetching fails (e.g., token missing, invalid, Privy API error), `getVerifiedPrivyUserFromCookies` throws an `AppError`. This error is caught by `handleApiRoute` and processed by `errorResponse`.
-    - The verified Privy `User` object (or `null` if `requireAuth` was `false` and no user was found) is then passed as an argument to the specific API route handler function (e.g., `postHandler`).
+    - The verified Privy `User` object (or `null` if `requireAuth` was `false` and no user was found) is then passed as an argument to the specific API route handler function.
   - **Route Handler Logic**:
-    - The specific route handler (e.g., `postHandler`) receives the `NextRequest`, the `privyUser` object, and any route `context`.
+    - The specific route handler receives the `NextRequest`, the `privyUser` object, and any route `context`.
     - It can then directly use the `privyUser` object for user-specific information (e.g., `privyUser.id` for the DID) without needing to re-fetch or verify the user.
   - **Business Logic & Custom Errors**:
     - The route handler implements its specific business logic.
     - For predictable errors (e.g., resource not found, validation failure), the handler should throw an `AppError` with an appropriate `statusCode`, `errorCode`, and `details`.
   - **Success Response**:
-    - On successful completion, the handler returns data using `successResponse(data, statusCode)` (from `apiUtils.ts`).
+    - On successful completion, the handler returns data using `successResponse(data, statusCode)`.
   - **Error Handling by `handleApiRoute`**:
     - Catches any error thrown within the route handler itself OR during the authentication step within `handleApiRoute`.
     - Uses `errorResponse(error, defaultStatusCode)` to generate a standardized JSON error response.
@@ -47,12 +47,12 @@ This document outlines the generic flow for API requests within the web applicat
 
 ## Error Types Summary
 
-- **`AppError` (`webapp/src/lib/server/AppError.ts`)**:
+- **`AppError` (`webapp/src/services/server/api/error.ts`)**:
   - Custom server-side error class for expected/handled errors.
   - Properties: `statusCode` (HTTP status), `errorCode` (machine-readable string), `details` (additional info).
-- **`ClientApiError` (`webapp/src/lib/client/apiClient.ts`)**:
+- **`ClientApiError` (`webapp/src/lib/api/client.ts`)**:
   - Custom client-side error class.
-  - Instantiated by `apiClient.ts` when an API call fails or returns an error.
+  - Instantiated when an API call fails or returns an error.
   - Wraps `message`, `errorCode`, `details`, and `statusCode` from the server's `ServerErrorResponse`.
 
 ## Standardized Response Formats
