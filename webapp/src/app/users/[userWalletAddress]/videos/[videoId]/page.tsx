@@ -2,7 +2,6 @@ import { getVerifiedPrivyUserFromCookies } from "@/services/server/external/priv
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { findVideoById } from "@/services/server/database";
-import { AppError } from "@/services/server/api/error";
 import VideoContent from "@/components/video/VideoContent";
 import Container from "@/components/layout/Container";
 
@@ -20,28 +19,23 @@ interface PageProps {
  * @param params - Route parameters containing userWalletAddress and videoId
  */
 export default async function VideoPage({ params }: PageProps) {
-  const privyUser = await getVerifiedPrivyUserFromCookies(await cookies());
+  let video;
 
-  if (!privyUser) {
+  try {
+    await getVerifiedPrivyUserFromCookies(await cookies());
+
+    video = await findVideoById(params.videoId);
+  } catch {
     redirect("/login");
   }
 
-  try {
-    const video = await findVideoById(params.videoId);
-
-    if (!video) {
-      throw new AppError("Video not found", 404, "VIDEO_NOT_FOUND");
-    }
-
-    return (
-      <Container>
-        <VideoContent video={video} />
-      </Container>
-    );
-  } catch (error) {
-    if (error instanceof AppError && error.statusCode === 404) {
-      redirect("/404");
-    }
-    throw error;
+  if (!video) {
+    redirect("/404");
   }
+
+  return (
+    <Container>
+      <VideoContent video={video} />
+    </Container>
+  );
 }
