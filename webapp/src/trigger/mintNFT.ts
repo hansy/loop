@@ -4,7 +4,7 @@ import {
   updateVideo,
 } from "@/services/server/database/videoService";
 import { ContractService } from "@/services/server/contracts/contractService";
-import { LitService } from "@/services/server/encryption/litService";
+import { LitService } from "@/services/server/encryption/litService.server";
 import { ACC_TOKEN_PLACEHOLDER } from "@/config/litConfig";
 import { Wallet } from "ethers";
 import { VideoMetadata } from "@/types";
@@ -50,6 +50,8 @@ export const mintNFT = task({
           }
         );
         newMetadata.playbackAccess = encryptedAccess;
+
+        await litService.disconnect();
       }
 
       // 4. Update video

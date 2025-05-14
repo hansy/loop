@@ -8,6 +8,7 @@ import React, {
   ReactElement,
   useState,
   useCallback,
+  useEffect,
 } from "react";
 import {
   usePrivy,
@@ -15,10 +16,13 @@ import {
   useLogout,
   User,
   PrivyErrorCode,
+  useWallets,
 } from "@privy-io/react-auth";
 import { createUser } from "@/services/client/userApi";
 import { useRouter } from "next/navigation";
 import { showErrorToast, showLoadingToast, updateToast } from "@/utils/toast";
+import { getLatestWallet } from "@/utils/privyUtils";
+import { useSetActiveWallet } from "@privy-io/wagmi";
 
 interface AuthContextType {
   user: User | null;
@@ -38,6 +42,9 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const { ready, authenticated, user } = usePrivy();
   const [isBackendRegistered, setIsBackendRegistered] = useState(false);
   const router = useRouter();
+  const { setActiveWallet } = useSetActiveWallet();
+  const { wallets, ready: walletsReady } = useWallets();
+
   const { login } = useLogin({
     onComplete: async () => {
       await registerUserWithBackend();
@@ -82,6 +89,28 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
     }),
     [user, login, logout, isAuthenticated, isAuthenticating]
   );
+
+  useEffect(() => {
+    if (authenticated && isBackendRegistered && user && walletsReady) {
+      const linkedAccounts = user.linkedAccounts;
+      const latestWallet = getLatestWallet(linkedAccounts);
+
+      if (latestWallet) {
+        const wallet = wallets.find((w) => w.address === latestWallet.address);
+
+        if (wallet) {
+          setActiveWallet(wallet);
+        }
+      }
+    }
+  }, [
+    wallets,
+    setActiveWallet,
+    authenticated,
+    isBackendRegistered,
+    walletsReady,
+    user,
+  ]);
 
   const registerUserWithBackend = async () => {
     try {
