@@ -8,9 +8,9 @@ import UploadContent from "@/components/upload/UploadContent";
  * This is a server component that handles authentication on the server side
  */
 export default async function UploadPage() {
-  const privyUser = await getVerifiedPrivyUserFromCookies(await cookies());
-
-  if (!privyUser) {
+  try {
+    await getVerifiedPrivyUserFromCookies(await cookies());
+  } catch {
     redirect("/login");
   }
 
