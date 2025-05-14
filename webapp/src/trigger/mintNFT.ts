@@ -8,6 +8,7 @@ import { LitService } from "@/services/server/encryption/litService.server";
 import { ACC_TOKEN_PLACEHOLDER } from "@/config/litConfig";
 import { Wallet } from "ethers";
 import { VideoMetadata } from "@/types";
+import { updateCID } from "./updateCID";
 
 export const mintNFT = task({
   id: "mint-nft",
@@ -56,6 +57,13 @@ export const mintNFT = task({
 
       // 4. Update video
       await updateVideo(payload.videoId, {
+        tokenId: BigInt(tokenId),
+        metadata: newMetadata,
+      });
+
+      // 5. Update CID
+      await updateCID.trigger({
+        videoId: payload.videoId,
         tokenId: BigInt(tokenId),
         metadata: newMetadata,
       });

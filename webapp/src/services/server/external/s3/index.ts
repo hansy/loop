@@ -32,7 +32,7 @@ export const METADATA_BUCKET = process.env.S3_METADATA_BUCKET as string;
 export const VIDEO_BUCKET = process.env
   .NEXT_PUBLIC_S3_VIDEO_UPLOAD_BUCKET as string;
 
-const CREDS: S3CredentialsMap = {
+export const CREDS: S3CredentialsMap = {
   uploadVideo: {
     accessKeyId: String(process.env.S3_VIDEO_UPLOAD_ACCESS_KEY),
     secretAccessKey: String(process.env.S3_VIDEO_UPLOAD_SECRET_KEY),
@@ -121,6 +121,7 @@ export const getPresignedUrl = async (
     Key: key,
     Bucket: bucketType === "video" ? VIDEO_BUCKET : METADATA_BUCKET,
   };
+
   const command = new PutObjectCommand(params);
 
   try {

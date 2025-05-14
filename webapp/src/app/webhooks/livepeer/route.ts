@@ -12,7 +12,7 @@ import {
   WebhookVerificationOptions,
 } from "@/services/server/api";
 import { createHmac, timingSafeEqual } from "crypto";
-import { mintNFT } from "@/trigger/mintNFT";
+import { tasks } from "@trigger.dev/sdk/v3";
 
 interface LivepeerWebhookPayload {
   event: string;
@@ -104,7 +104,7 @@ async function handleLivepeerWebhook(
           status: "minting",
         });
 
-        await mintNFT.trigger({ videoId: video.id });
+        await tasks.trigger("mint-nft", { videoId: video.id });
       } else {
         await updateVideo(video.id, { status: "failed" });
       }

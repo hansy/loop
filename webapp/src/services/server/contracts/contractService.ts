@@ -81,4 +81,44 @@ export class ContractService {
   async waitForTransaction(hash: `0x${string}`): Promise<TransactionReceipt> {
     return this.publicClient.waitForTransactionReceipt({ hash });
   }
+
+  async updateMetadataCID(tokenId: bigint, cid: string) {
+    try {
+      const { request } = await this.publicClient.simulateContract({
+        address: CONTRACT_ADDRESSES.VIDEO_NFT,
+        abi: VideoNFTABI,
+        functionName: "updateMetadataCID",
+        args: [tokenId, cid],
+        account: this.walletClient.account,
+      });
+
+      const hash = await this.walletClient.writeContract(request);
+      const receipt = await this.waitForTransaction(hash);
+
+      return receipt;
+    } catch (error) {
+      console.error("Error updating metadata CID", error);
+      throw new Error("Error updating metadata CID");
+    }
+  }
+
+  async updatePrice(tokenId: bigint, price: bigint) {
+    try {
+      const { request } = await this.publicClient.simulateContract({
+        address: CONTRACT_ADDRESSES.VIDEO_NFT,
+        abi: VideoNFTABI,
+        functionName: "updatePrice",
+        args: [tokenId, price],
+        account: this.walletClient.account,
+      });
+
+      const hash = await this.walletClient.writeContract(request);
+      const receipt = await this.waitForTransaction(hash);
+
+      return receipt;
+    } catch (error) {
+      console.error("Error updating price", error);
+      throw new Error("Error updating price");
+    }
+  }
 }
