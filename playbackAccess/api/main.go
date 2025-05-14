@@ -217,33 +217,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	handleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
 }
 
-// TestHandler is a test endpoint to verify database query
-func TestHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Initialize database client
-	dbClient, err := db.NewClient()
-	if err != nil {
-		handleErr(w, "Failed to initialize database client", err, http.StatusInternalServerError)
-		return
-	}
-	defer dbClient.Close()
-
-	// Test with tokenId = "1"
-	videoStore, err := dbClient.GetVideoMetadata("1")
-	if err != nil {
-		handleErr(w, "Error fetching video metadata", err, http.StatusInternalServerError)
-		return
-	}
-
-	// Return the video metadata
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(videoStore)
-}
-
 func main() {
 	// Set up CORS middleware
 	corsMiddleware := func(next http.Handler) http.Handler {
@@ -264,7 +237,6 @@ func main() {
 
 	// Set up routes
 	mux := http.NewServeMux()
-	mux.HandleFunc("/test", TestHandler)
 	mux.HandleFunc("/", Handler)
 
 	port := os.Getenv("PORT")
