@@ -1,3 +1,7 @@
+// Package main provides the main entry point for the playback access API.
+// This API handles video access control and authentication, supporting both public
+// and protected videos. It integrates with Redis for caching and access control,
+// PostgreSQL for video metadata storage, and Storj for video delivery.
 package main
 
 import (
@@ -20,6 +24,8 @@ import (
 
 var ctx = context.Background()
 
+// handleErr sends an error response to the client with appropriate status code and message.
+// It logs the error for debugging purposes and returns a JSON response to the client.
 func handleErr(w http.ResponseWriter, msg string, err error, status int) {
 	log.Printf("Error: %s: %v", msg, err)
 	w.Header().Set("Content-Type", "application/json")
@@ -27,6 +33,9 @@ func handleErr(w http.ResponseWriter, msg string, err error, status int) {
 	json.NewEncoder(w).Encode(model.ErrorResponse{Msg: msg})
 }
 
+// createAndSendPublicSharedLink generates a public access link for a video using Storj.
+// It retrieves the Storj configuration, constructs the object path, and creates a
+// publicly accessible link for the video content.
 func createAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
 	accessGrant, bucket := storj.GetStorjConfig()
 	objectPath := videoId + "/data/"
@@ -41,6 +50,17 @@ func createAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
 	json.NewEncoder(w).Encode(map[string]string{"data": url})
 }
 
+// getVideoMetadata retrieves video metadata from Redis cache or PostgreSQL database.
+// It first attempts to fetch the metadata from Redis. If not found, it queries the
+// database and caches the result in Redis for future requests.
+//
+// Flow:
+// 1. Construct Redis key using tokenId
+// 2. Try to get metadata from Redis
+// 3. If found in Redis, parse and return
+// 4. If not in Redis, query database
+// 5. Cache database result in Redis
+// 6. Return metadata
 func getVideoMetadata(rdb *redis.Client, dbClient *db.Client, tokenId string) (*model.VideoStore, error) {
 	tokenKey := fmt.Sprintf("token:%s", tokenId)
 
@@ -72,6 +92,31 @@ func getVideoMetadata(rdb *redis.Client, dbClient *db.Client, tokenId string) (*
 	return nil, fmt.Errorf("error fetching video metadata from Redis: %w", err)
 }
 
+// Handler processes incoming requests for video access.
+// It handles authentication, authorization, and video access link generation.
+//
+// Request Flow:
+// 1. Validate request method and parse body
+// 2. Initialize Redis and database clients
+// 3. Retrieve video metadata if tokenId provided
+// 4. Handle public videos immediately
+// 5. Verify request signature
+// 6. Process authentication based on derivedVia:
+//   - lit.action: Handle Lit Protocol authentication
+//   - loop.web3.auth: Verify existing access
+//
+// 7. Generate and return access link if authorized
+//
+// Authentication Methods:
+// - lit.action: Uses Lit Protocol for authentication
+//   - Verifies message signature
+//   - Checks message expiration
+//   - Prevents replay attacks using nonces
+//   - Grants access in Redis
+//
+// - loop.web3.auth: Simple access verification
+//   - Checks Redis for existing access
+//   - No additional verification needed
 func Handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
@@ -217,6 +262,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	handleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
 }
 
+// main initializes and starts the HTTP server.
+// It sets up CORS middleware and routes, then listens for incoming requests.
 func main() {
 	// Set up CORS middleware
 	corsMiddleware := func(next http.Handler) http.Handler {
