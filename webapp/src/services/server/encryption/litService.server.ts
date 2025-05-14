@@ -78,16 +78,14 @@ export class LitService {
   ): Promise<AuthSig> {
     const client = await this.connect();
 
-    const walletWithCapacityNFT = new Wallet(String(process.env.PRIVATE_KEY));
-    const capacityTokenInfo = await this.mintCapacityCreditsNFT(
-      walletWithCapacityNFT
-    );
+    const wallet = new Wallet(String(process.env.PRIVATE_KEY));
+    const capacityTokenInfo = await this.mintCapacityCreditsNFT(wallet);
 
     try {
       const { capacityDelegationAuthSig } =
         await client.createCapacityDelegationAuthSig({
           uses: "100",
-          dAppOwnerWallet: walletWithCapacityNFT,
+          dAppOwnerWallet: wallet,
           capacityTokenId: capacityTokenInfo.capacityTokenIdStr,
           delegateeAddresses: [address],
           statement: "Delegate Lit capacity to user",
@@ -105,7 +103,7 @@ export class LitService {
   async mintCapacityCreditsNFT(wallet: Wallet) {
     try {
       const contractClient = new LitContracts({
-        signer: wallet,
+        privateKey: wallet.privateKey,
         network: LIT_CLIENT_OPTIONS.litNetwork,
       });
       await contractClient.connect();

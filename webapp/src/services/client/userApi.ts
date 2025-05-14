@@ -5,6 +5,7 @@ import { apiPost } from "."; // Adjusted import path
  */
 export interface UserCreateResponse {
   newUser: boolean;
+  walletAddress: string;
 }
 
 /**

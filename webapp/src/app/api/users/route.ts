@@ -20,14 +20,18 @@ export const POST = handleApiRoute(async (_req, privyUser) => {
     throw new AppError("Unauthorized", 401, "UNAUTHORIZED");
   }
 
-  if (privyUser.customMetadata.appUserId) {
-    return successResponse({ newUser: false }, 200);
-  }
-
-  const email = privyUser.email?.address || privyUser.google?.email;
   const wallet = getLatestWallet(
     privyUser.linkedAccounts as LinkedAccountWithMetadata[]
   );
+
+  if (privyUser.customMetadata.appUserId) {
+    return successResponse(
+      { newUser: false, walletAddress: wallet.address },
+      200
+    );
+  }
+
+  const email = privyUser.email?.address || privyUser.google?.email;
 
   // Construct user input from Privy user data
   const userInput = {
@@ -43,7 +47,10 @@ export const POST = handleApiRoute(async (_req, privyUser) => {
       appUserId: userInput.id,
     });
 
-    return successResponse({ newUser: true }, 201);
+    return successResponse(
+      { newUser: true, walletAddress: wallet.address },
+      201
+    );
   } catch (error) {
     // Check if the error is a user already exists error
     if (
@@ -51,7 +58,10 @@ export const POST = handleApiRoute(async (_req, privyUser) => {
       error.errorCode === "USER_ALREADY_EXISTS"
     ) {
       // User already exists, return 200 OK
-      return successResponse({ newUser: false }, 200);
+      return successResponse(
+        { newUser: false, walletAddress: wallet.address },
+        200
+      );
     }
     // Re-throw other errors to be handled by handleApiRoute
     throw error;
