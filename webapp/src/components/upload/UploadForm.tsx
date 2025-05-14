@@ -73,7 +73,9 @@ export default function UploadForm() {
 
       await uploadVideo(data);
 
-      toast.success("Video uploaded successfully");
+      toast.success(
+        "Video uploaded successfully. It will be ready in a few moments!"
+      );
       router.push("/library");
     } catch (error) {
       console.error("[UploadForm] Form submission error:", error);

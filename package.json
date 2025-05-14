@@ -10,6 +10,8 @@
     "db:generate": "yarn workspace webapp db:generate",
     "db:migrate": "yarn workspace webapp db:migrate",
     "db:studio": "yarn workspace webapp db:studio",
-    "contracts:compile": "yarn workspace contracts compile"
+    "contracts:compile": "yarn workspace contracts compile",
+    "trigger:dev": "yarn workspace webapp trigger:dev",
+    "trigger:deploy": "yarn workspace webapp trigger:deploy"
   }
 }

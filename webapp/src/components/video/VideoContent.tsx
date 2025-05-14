@@ -3,6 +3,9 @@
 import { Video } from "@/types/video";
 import { formatDistanceToNow } from "date-fns";
 import { VideoMetadata } from "@/types/video";
+import Link from "next/link";
+import { IPFS_GATEWAY } from "@/config/ipfsConfig";
+import { truncateString } from "@/utils/truncateString";
 
 interface VideoContentProps {
   video: Video;
@@ -40,9 +43,15 @@ export default function VideoContent({ video }: VideoContentProps) {
           </div>
           <div className="flex-shrink-0">
             <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <code className="text-sm text-gray-900 font-mono">
-                {video.ipfsCid}
-              </code>
+              <Link
+                href={`${IPFS_GATEWAY}${video.ipfsCid}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <code className="text-sm text-gray-900 font-mono">
+                  {truncateString(video.ipfsCid, 5, 5)}
+                </code>
+              </Link>
             </div>
           </div>
         </div>
