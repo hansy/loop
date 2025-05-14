@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { camelCaseString } from "@/utils/camelCaseString";
 import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { ACC_TOKEN_PLACEHOLDER } from "@/config/litConfig";
 
 /**
  * Initial state for the access control builder
@@ -35,7 +36,7 @@ export const initialState: AccessControlState = [
         chain: camelCaseString(DEFAULT_CHAIN.name),
         contract: CONTRACT_ADDRESSES.VIDEO_NFT,
         subtype: "ERC1155",
-        tokenId: "PLACEHOLDER", // Temporary value, will be replaced with actual video NFT token ID after minting
+        tokenId: ACC_TOKEN_PLACEHOLDER, // Temporary value, will be replaced with actual video NFT token ID after minting
         numTokens: 1,
       },
       {
@@ -47,7 +48,7 @@ export const initialState: AccessControlState = [
         type: "paywall",
         id: "paywall-rule",
         chain: camelCaseString(DEFAULT_CHAIN.name),
-        tokenId: "PLACEHOLDER",
+        tokenId: ACC_TOKEN_PLACEHOLDER,
       },
       {
         type: "operator",

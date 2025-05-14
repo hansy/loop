@@ -4,6 +4,7 @@ import { useAccessControl } from "@/contexts/AccessControlContext";
 import { VideoMetadata, VideoMetadataSchema } from "@/validations/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
 import { convertToLitFormat } from "@/features/accessControl/utils/litConversion";
+import { ACC_TOKEN_PLACEHOLDER } from "@/config/litConfig";
 
 interface UseVideoMetadataReturn {
   metadata: VideoMetadata;
@@ -92,7 +93,7 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
   const createMetadata = useCallback(() => {
     const baseMetadata = {
       id,
-      tokenId: "PLACEHOLDER",
+      tokenId: ACC_TOKEN_PLACEHOLDER,
       title,
       creator: address!,
       description,

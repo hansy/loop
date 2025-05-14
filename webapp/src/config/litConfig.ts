@@ -6,3 +6,5 @@ import { IS_PRODUCTION } from "@/utils/env";
 export const LIT_ACTION_IPFS_CID = IS_PRODUCTION
   ? "QmUZfKDuZbzf3jotSKsxsyTxpPqibuUh5R82VzviS16Qmm"
   : "QmUZfKDuZbzf3jotSKsxsyTxpPqibuUh5R82VzviS16Qmm";
+
+export const ACC_TOKEN_PLACEHOLDER = "TOKEN_PLACEHOLDER";
