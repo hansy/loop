@@ -158,7 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const setupSessionSigs = async (walletAddress: string) => {
     try {
       // Fetch delegated auth sig from backend
-      const delegatedAuthSig = await fetchDelegatedAuthSig();
+      const delegatedAuthSig = await fetchDelegatedAuthSig(walletAddress);
 
       // Generate session sigs using the delegated auth sig
       const sigs = await litService.generateSessionSigs(

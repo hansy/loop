@@ -18,8 +18,10 @@ export interface DelegatedAuthSigResponse {
  * @returns {Promise<AuthSig>} A promise that resolves with the delegated auth signature.
  * @throws {ClientApiError} If the API call fails (handled by apiClient).
  */
-export async function fetchDelegatedAuthSig(): Promise<AuthSig> {
-  return apiGet<DelegatedAuthSigResponse>("/api/das").then(
-    (response) => response.delegatedAuthSig
-  );
+export async function fetchDelegatedAuthSig(
+  walletAddress: string
+): Promise<AuthSig> {
+  return apiGet<DelegatedAuthSigResponse>(
+    `/api/das?walletAddress=${walletAddress}`
+  ).then((response) => response.delegatedAuthSig);
 }
