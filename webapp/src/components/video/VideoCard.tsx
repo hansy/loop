@@ -49,10 +49,8 @@ export default function VideoCard({ video }: VideoCardProps) {
 
   return (
     <Link
-      href={isReady ? `/watch/${video.id}` : "#"}
-      className={`block bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow ${
-        !isReady ? "cursor-not-allowed" : ""
-      }`}
+      href={`/users/${metadata.creator}/videos/${video.id}`}
+      className={`block bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow`}
     >
       <div className="aspect-video bg-gray-100 relative">
         <Image
