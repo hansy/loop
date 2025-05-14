@@ -1,5 +1,6 @@
-import { apiPost } from ".";
+import { apiPost, apiGet } from ".";
 import { VideoMetadata } from "@/validations/videoSchemas";
+import { Video } from "@/types/video";
 
 /**
  * Defines the response structure from the video upload endpoint
@@ -20,4 +21,14 @@ export async function uploadVideo(
   metadata: VideoMetadata
 ): Promise<VideoUploadResponse> {
   return apiPost<VideoUploadResponse>("/api/videos", metadata);
+}
+
+/**
+ * Fetches all videos for the authenticated user
+ *
+ * @returns A promise that resolves with an array of videos
+ * @throws {ClientApiError} If the API call fails
+ */
+export async function getUserVideos(): Promise<Video[]> {
+  return apiGet<Video[]>("/api/videos");
 }

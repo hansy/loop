@@ -18,6 +18,7 @@ import Avatar from "@/components/ui/Avatar";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAccount } from "wagmi";
 import { truncateString } from "@/utils/truncateString";
+import Link from "next/link";
 
 const navigation = [{ name: "Library", href: "/library" }];
 
@@ -93,7 +94,7 @@ export default function Navbar() {
                 navigation.map((item) => {
                   const isCurrent = item.href === pathname;
                   return (
-                    <a
+                    <Link
                       key={item.name}
                       href={item.href}
                       aria-current={isCurrent ? "page" : undefined}
@@ -104,7 +105,7 @@ export default function Navbar() {
                       } rounded-md px-3 py-2 text-sm font-medium`}
                     >
                       {item.name}
-                    </a>
+                    </Link>
                   );
                 })}
             </div>

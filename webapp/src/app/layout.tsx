@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import WalletProvider from "@/components/providers/WalletProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NetworkProvider } from "@/contexts/NetworkContext";
+import NextTopLoader from "nextjs-toploader";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
+        <NextTopLoader />
         <WalletProvider>
           <NetworkProvider>
             <AuthProvider>

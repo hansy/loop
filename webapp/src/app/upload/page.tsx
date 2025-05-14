@@ -1,27 +1,18 @@
-"use client";
+import { getVerifiedPrivyUserFromCookies } from "@/services/server/external/privy";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import UploadContent from "@/components/upload/UploadContent";
 
-import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { AccessControlProvider } from "@/contexts/AccessControlContext";
-import UploadForm from "@/components/upload/UploadForm";
+/**
+ * Upload page allows users to upload new videos
+ * This is a server component that handles authentication on the server side
+ */
+export default async function UploadPage() {
+  const privyUser = await getVerifiedPrivyUserFromCookies(await cookies());
 
-export default function UploadPage() {
-  const {
-    isLoading: authLoading,
-    isAuthenticated,
-    LoadingComponent,
-  } = useRequireAuth();
-
-  if (authLoading && LoadingComponent) {
-    return <LoadingComponent />;
+  if (!privyUser) {
+    redirect("/login");
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
-
-  return (
-    <AccessControlProvider>
-      <UploadForm />
-    </AccessControlProvider>
-  );
+  return <UploadContent />;
 }

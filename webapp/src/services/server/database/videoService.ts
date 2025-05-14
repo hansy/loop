@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db } from "@/db/client";
 import { videos } from "@/db/schema";
 import { Video } from "@/types/video";
@@ -76,6 +76,7 @@ export async function findVideosByUserId(userId: string): Promise<Video[]> {
   try {
     return await db.query.videos.findMany({
       where: eq(videos.userId, userId),
+      orderBy: desc(videos.createdAt),
     });
   } catch (error) {
     throw new AppError(

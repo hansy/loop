@@ -35,6 +35,7 @@
     "drizzle-orm": "^0.43.1",
     "minidenticons": "^4.2.1",
     "next": "15.3.2",
+    "nextjs-toploader": "^3.8.16",
     "pg": "^8.15.6",
     "postgres": "^3.4.5",
     "react": "^19.0.0",

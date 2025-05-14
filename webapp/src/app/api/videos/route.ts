@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { transcode } from "@/services/server/external/livepeer";
-import { AppError } from "@/services/server/api/error";
 import { handleApiRoute, successResponse } from "@/services/server/api";
+import { AppError } from "@/services/server/api/error";
 import { User as PrivyUserType } from "@privy-io/server-auth";
 import { createVideo, updateVideo } from "@/services/server/database";
 import { VideoMetadataSchema } from "@/validations/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
+import { transcode } from "@/services/server/external/livepeer";
 
 /**
  * POST /api/videos
