@@ -9,7 +9,7 @@ import type {
   LitActionRule,
 } from "./types";
 import { camelCaseString } from "@/utils/camelCaseString";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 import { ACC_TOKEN_PLACEHOLDER } from "@/config/litConfig";
 
 /**

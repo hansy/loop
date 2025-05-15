@@ -1,4 +1,4 @@
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 import { LIT_ACTION_IPFS_CID } from "@/config/litConfig";
 import {
   AccessControlState,

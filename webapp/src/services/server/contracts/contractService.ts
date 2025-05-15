@@ -1,5 +1,5 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { CONTRACT_ADDRESSES } from "@/config/contracts";
+import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 import { DEFAULT_CHAIN, transport } from "@/config/chainConfig";
 import {
   createPublicClient,
