@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/joho/godotenv/autoload"
+
 	"github.com/loop/playbackAccess/internal/handler"
 )
 

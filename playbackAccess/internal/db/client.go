@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/loop/playbackAccess/internal/model"
 )
@@ -42,14 +41,6 @@ type Client struct {
 // NewClient initializes and returns a database client.
 // It reads the database URL from the DATABASE_URL environment variable.
 func NewClient() (*Client, error) {
-	// Try to load .env.local first, then fall back to .env
-	if err := godotenv.Load(".env.local"); err != nil {
-		log.Printf("Warning: .env.local not found, trying .env")
-		if err := godotenv.Load(); err != nil {
-			log.Printf("Warning: .env not found")
-		}
-	}
-
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
 		return nil, fmt.Errorf("DATABASE_URL environment variable is not set")

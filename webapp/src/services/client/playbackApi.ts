@@ -27,6 +27,6 @@ export interface PlaybackAccessRequest {
  */
 export async function getPlaybackUrl(
   params: PlaybackAccessRequest
-): Promise<PlaybackAccessResponse> {
-  return apiPost<PlaybackAccessResponse>(`${PLAYBACK_ENDPOINT}`, params);
+): Promise<string> {
+  return apiPost<string>(`${PLAYBACK_ENDPOINT}`, params);
 }

@@ -46,9 +46,9 @@ export function VideoContent({ video }: VideoContentProps) {
           params.authSig = authSigfromSessionSigs(sessionSigs);
         }
 
-        const response = await getPlaybackUrl(params);
+        const url = await getPlaybackUrl(params);
 
-        setVideoUrl(response.data);
+        setVideoUrl(url);
         setIsLocked(false);
       } catch (error) {
         console.error("Error fetching video URL:", error);
@@ -70,10 +70,10 @@ export function VideoContent({ video }: VideoContentProps) {
 
   useEffect(() => {
     // If first attempt failed and we have sessionSigs, try again with authSig
-    if (isLocked && !!video.tokenId && sessionSigs) {
+    if (isLocked && !!video.tokenId && !isLoading && sessionSigs) {
       fetchVideoUrl(video.tokenId.toString(), sessionSigs);
     }
-  }, [sessionSigs, isLocked, fetchVideoUrl, video.tokenId]);
+  }, [sessionSigs, isLocked, fetchVideoUrl, video.tokenId, isLoading]);
 
   return (
     <div className="space-y-8">
