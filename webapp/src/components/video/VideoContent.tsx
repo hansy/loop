@@ -11,10 +11,11 @@ import { Video } from "@/types/video";
 import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SessionSigsMap } from "@lit-protocol/types";
-import type { HLSSrc } from "@vidstack/react";
+import type { MediaSrc } from "@vidstack/react";
 import { authSigfromSessionSigs } from "@/utils/auth";
 import { getPlaybackUrl } from "@/services/client/playbackApi";
 import { PlaybackAccessRequest } from "@/services/client/playbackApi";
+import { defaultAccessControlTemplate } from "@/features/accessControl/defaultTemplate";
 
 /**
  * Interface defining the props for the VideoContent component.
@@ -33,8 +34,8 @@ interface VideoContentProps {
  */
 export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
-  const [src, setSrc] = useState<HLSSrc | undefined>(undefined);
-  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+  const [src, setSrc] = useState<MediaSrc | undefined>(undefined);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const { sessionSigs } = useAuth();
@@ -158,8 +159,9 @@ export function VideoContent({ video }: VideoContentProps) {
       <VideoUnlockModal
         isOpen={isUnlockModalOpen}
         onClose={() => setIsUnlockModalOpen(false)}
-        video={metadata}
-        onPurchase={() => {}}
+        metadata={metadata}
+        accessControl={defaultAccessControlTemplate}
+        onUnlock={() => {}}
       />
     </div>
   );

@@ -7,13 +7,13 @@ import {
 } from "@vidstack/react/player/layouts/default";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import type { HLSSrc } from "@vidstack/react";
+import type { MediaSrc } from "@vidstack/react";
 import VideoPlayerOverlay from "./VideoPlayerOverlay";
 
 /**
  * Interface defining the props for the VideoPlayer component.
  * @interface VideoPlayerProps
- * @property {HLSSrc | undefined} src - The HLS video source URL and type
+ * @property {MediaSrc} src - The HLS video source URL and type
  * @property {string} [poster] - Optional poster image URL to display before video playback
  * @property {string} [title] - Optional title of the video
  * @property {Array<{src: string, label: string, language: string}>} [captions] - Optional array of caption tracks
@@ -29,7 +29,7 @@ import VideoPlayerOverlay from "./VideoPlayerOverlay";
  * @property {() => void} [onUnlockClick] - Callback when video unlock is requested
  */
 interface VideoPlayerProps {
-  src: HLSSrc | undefined;
+  src?: MediaSrc;
   poster?: string;
   title?: string;
   captions?: {
