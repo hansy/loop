@@ -214,7 +214,7 @@ func handleLitAction(ctx context.Context, rdb *redis.Client, signedMessage, toke
 
 	// Add access to Redis
 	accessKey := fmt.Sprintf("access:%s:%s", parsedMessage.VideoTokenId, parsedMessage.UserAddress)
-	if err := rdb.SetAccess(accessKey); err != nil {
+	if err := rdb.SetAccess(accessKey, parsedMessage.Exp); err != nil {
 		return fmt.Errorf("error setting access: %w", err)
 	}
 

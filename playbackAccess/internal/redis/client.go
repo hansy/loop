@@ -68,9 +68,9 @@ func (c *Client) SetNonce(nonceKey string, exp int64) error {
 	return c.Set(c.ctx, nonceKey, exp, time.Until(time.UnixMilli(exp))).Err()
 }
 
-// SetAccess sets an access record in Redis.
-func (c *Client) SetAccess(accessKey string) error {
-	return c.Set(c.ctx, accessKey, "t", 0).Err()
+// SetAccess sets an access record in Redis with expiration.
+func (c *Client) SetAccess(accessKey string, exp int64) error {
+	return c.Set(c.ctx, accessKey, "t", time.Until(time.UnixMilli(exp))).Err()
 }
 
 // GetAccess retrieves an access record from Redis.
