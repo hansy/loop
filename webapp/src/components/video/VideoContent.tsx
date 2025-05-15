@@ -88,7 +88,7 @@ export function VideoContent({ video }: VideoContentProps) {
         poster={metadata.coverImage}
         title={metadata.title}
         isLoading={isLoading}
-        isAuthenticated={false}
+        isAuthenticated={true}
         isLocked={isLocked}
         onPlay={() => {
           // TODO: Implement analytics or other play tracking
@@ -101,6 +101,15 @@ export function VideoContent({ video }: VideoContentProps) {
         onEnded={() => {
           // TODO: Implement analytics or other end tracking
           console.log("Video ended");
+        }}
+        onProfileClick={() => {
+          console.log("Profile clicked");
+        }}
+        onAuthenticate={() => {
+          console.log("Authenticate clicked");
+        }}
+        onUnlock={() => {
+          console.log("Unlock clicked");
         }}
       />
 

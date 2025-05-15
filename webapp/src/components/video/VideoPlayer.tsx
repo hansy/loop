@@ -26,6 +26,9 @@ interface VideoPlayerProps {
   onPause?: () => void;
   onEnded?: () => void;
   onVerifyAccess?: () => void;
+  onProfileClick?: () => void;
+  onAuthenticate?: () => void;
+  onUnlock?: () => void;
 }
 
 /**
@@ -55,7 +58,9 @@ export default function VideoPlayer({
   onPlay,
   onPause,
   onEnded,
-  onVerifyAccess,
+  onProfileClick,
+  onAuthenticate,
+  onUnlock,
 }: VideoPlayerProps) {
   console.log(src);
   return (
@@ -87,13 +92,14 @@ export default function VideoPlayer({
 
         <DefaultVideoLayout icons={defaultLayoutIcons} />
 
-        {(isLoading || !src) && (
-          <VideoPlayerOverlay
-            type={isLoading ? "loading" : "locked"}
-            isAuthenticated={isAuthenticated}
-            onVerifyAccess={onVerifyAccess}
-          />
-        )}
+        <VideoPlayerOverlay
+          isLoading={isLoading}
+          isLocked={isLocked}
+          isAuthenticated={isAuthenticated}
+          onProfileClick={onProfileClick}
+          onAuthenticate={onAuthenticate}
+          onUnlock={onUnlock}
+        />
       </MediaPlayer>
     </div>
   );
