@@ -31,7 +31,7 @@ interface VideoContentProps {
 export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
   const [src, setSrc] = useState<HLSSrc | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const { sessionSigs } = useAuth();
 
@@ -66,19 +66,19 @@ export function VideoContent({ video }: VideoContentProps) {
     []
   );
 
-  useEffect(() => {
-    if (video.tokenId) {
-      // First try without authSig (in case video is public)
-      fetchVideoUrl(video.tokenId.toString());
-    }
-  }, [fetchVideoUrl, video.tokenId]);
+  // useEffect(() => {
+  //   if (video.tokenId) {
+  //     // First try without authSig (in case video is public)
+  //     fetchVideoUrl(video.tokenId.toString());
+  //   }
+  // }, [fetchVideoUrl, video.tokenId]);
 
-  useEffect(() => {
-    // If first attempt failed and we have sessionSigs, try again with authSig
-    if (isLocked && !!video.tokenId && !isLoading && sessionSigs) {
-      fetchVideoUrl(video.tokenId.toString(), sessionSigs);
-    }
-  }, [sessionSigs, isLocked, fetchVideoUrl, video.tokenId, isLoading]);
+  // useEffect(() => {
+  //   // If first attempt failed and we have sessionSigs, try again with authSig
+  //   if (isLocked && !!video.tokenId && !isLoading && sessionSigs) {
+  //     fetchVideoUrl(video.tokenId.toString(), sessionSigs);
+  //   }
+  // }, [sessionSigs, isLocked, fetchVideoUrl, video.tokenId, isLoading]);
 
   return (
     <div className="space-y-8">
@@ -88,7 +88,7 @@ export function VideoContent({ video }: VideoContentProps) {
         poster={metadata.coverImage}
         title={metadata.title}
         isLoading={isLoading}
-        isAuthenticated={!!sessionSigs}
+        isAuthenticated={false}
         isLocked={isLocked}
         onPlay={() => {
           // TODO: Implement analytics or other play tracking

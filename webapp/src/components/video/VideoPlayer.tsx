@@ -7,8 +7,8 @@ import {
 } from "@vidstack/react/player/layouts/default";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import type { HLSSrc } from "@vidstack/react";
+import VideoPlayerOverlay from "./VideoPlayerOverlay";
 
 interface VideoPlayerProps {
   src: HLSSrc | undefined;
@@ -25,6 +25,7 @@ interface VideoPlayerProps {
   onPlay?: () => void;
   onPause?: () => void;
   onEnded?: () => void;
+  onVerifyAccess?: () => void;
 }
 
 /**
@@ -54,7 +55,9 @@ export default function VideoPlayer({
   onPlay,
   onPause,
   onEnded,
+  onVerifyAccess,
 }: VideoPlayerProps) {
+  console.log(src);
   return (
     <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
       <MediaPlayer
@@ -84,18 +87,12 @@ export default function VideoPlayer({
 
         <DefaultVideoLayout icons={defaultLayoutIcons} />
 
-        {isLoading && (
-          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <LoadingSpinner className="h-12 w-12 border-b-2 border-gray-100" />
-            </div>
-          </div>
-        )}
-
-        {!isLoading && !src && (
-          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-            <div className="text-gray-100">This video is locked</div>
-          </div>
+        {(isLoading || !src) && (
+          <VideoPlayerOverlay
+            type={isLoading ? "loading" : "locked"}
+            isAuthenticated={isAuthenticated}
+            onVerifyAccess={onVerifyAccess}
+          />
         )}
       </MediaPlayer>
     </div>
