@@ -8,9 +8,10 @@ import {
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import type { HLSSrc } from "@vidstack/react";
 
 interface VideoPlayerProps {
-  src: string | null;
+  src: HLSSrc | undefined;
   poster?: string;
   title?: string;
   captions?: {
@@ -54,24 +55,6 @@ export default function VideoPlayer({
   onPause,
   onEnded,
 }: VideoPlayerProps) {
-  if (isLoading) {
-    return (
-      <div className="aspect-video bg-gray-800 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <LoadingSpinner className="h-12 w-12 border-b-2 border-gray-100" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!src) {
-    return (
-      <div className="aspect-video bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">This video is locked</div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
       <MediaPlayer
@@ -80,11 +63,13 @@ export default function VideoPlayer({
         onPlay={onPlay}
         onPause={onPause}
         onEnded={onEnded}
+        playsInline
+        autoPlay={false}
+        muted={false}
+        src={src}
       >
         <MediaProvider>
           <Poster className="vds-poster" src={poster} alt={title} />
-          <video src={src} />
-
           {captions?.map((caption) => (
             <Track
               key={caption.src}
@@ -98,6 +83,20 @@ export default function VideoPlayer({
         </MediaProvider>
 
         <DefaultVideoLayout icons={defaultLayoutIcons} />
+
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <LoadingSpinner className="h-12 w-12 border-b-2 border-gray-100" />
+            </div>
+          </div>
+        )}
+
+        {!isLoading && !src && (
+          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+            <div className="text-gray-100">This video is locked</div>
+          </div>
+        )}
       </MediaPlayer>
     </div>
   );

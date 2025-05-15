@@ -15,6 +15,7 @@ import { Video } from "@/types/video";
 import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SessionSigsMap } from "@lit-protocol/types";
+import type { HLSSrc } from "@vidstack/react";
 
 interface VideoContentProps {
   video: Video;
@@ -29,7 +30,7 @@ interface VideoContentProps {
  */
 export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [src, setSrc] = useState<HLSSrc | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(true);
   const { sessionSigs } = useAuth();
@@ -46,14 +47,18 @@ export function VideoContent({ video }: VideoContentProps) {
           params.authSig = authSigfromSessionSigs(sessionSigs);
         }
 
-        const url = await getPlaybackUrl(params);
+        const path = await getPlaybackUrl(params);
 
-        setVideoUrl(url);
+        setSrc({
+          src: `${path}hls/index.m3u8`,
+          type: "application/x-mpegurl",
+        });
+
         setIsLocked(false);
       } catch (error) {
         console.error("Error fetching video URL:", error);
         setIsLocked(true);
-        setVideoUrl(null);
+        setSrc(undefined);
       } finally {
         setIsLoading(false);
       }
@@ -79,7 +84,7 @@ export function VideoContent({ video }: VideoContentProps) {
     <div className="space-y-8">
       {/* Video Player - Always rendered */}
       <VideoPlayer
-        src={videoUrl}
+        src={src}
         poster={metadata.coverImage}
         title={metadata.title}
         isLoading={isLoading}
