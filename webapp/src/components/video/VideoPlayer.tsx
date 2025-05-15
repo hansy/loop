@@ -7,6 +7,7 @@ import {
 } from "@vidstack/react/player/layouts/default";
 import "@vidstack/react/player/styles/default/theme.css";
 import "@vidstack/react/player/styles/default/layouts/video.css";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface VideoPlayerProps {
   src: string | null;
@@ -55,8 +56,10 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   if (isLoading) {
     return (
-      <div className="aspect-video bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="aspect-video bg-gray-800 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <LoadingSpinner className="h-12 w-12 border-b-2 border-gray-100" />
+        </div>
       </div>
     );
   }
