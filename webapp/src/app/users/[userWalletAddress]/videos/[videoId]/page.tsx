@@ -1,8 +1,6 @@
-import { getVerifiedPrivyUserFromCookies } from "@/services/server/external/privy";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { findVideoById } from "@/services/server/database";
-import VideoContent from "@/components/video/VideoContent";
+import { VideoContent } from "@/components/video/VideoContent";
 import Container from "@/components/layout/Container";
 
 interface PageProps {
@@ -19,15 +17,8 @@ interface PageProps {
  * @param params - Route parameters containing userWalletAddress and videoId
  */
 export default async function VideoPage({ params }: PageProps) {
-  let video;
-
-  try {
-    await getVerifiedPrivyUserFromCookies(await cookies());
-
-    video = await findVideoById(params.videoId);
-  } catch {
-    redirect("/login");
-  }
+  const { videoId } = await params;
+  const video = await findVideoById(videoId);
 
   if (!video) {
     redirect("/404");

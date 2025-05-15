@@ -2692,7 +2692,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/dom@npm:^1.0.0":
+"@floating-ui/dom@npm:^1.0.0, @floating-ui/dom@npm:^1.6.10":
   version: 1.7.0
   resolution: "@floating-ui/dom@npm:1.7.0"
   dependencies:
@@ -8464,6 +8464,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vidstack/react@npm:^1.12.13":
+  version: 1.12.13
+  resolution: "@vidstack/react@npm:1.12.13"
+  dependencies:
+    "@floating-ui/dom": "npm:^1.6.10"
+    media-captions: "npm:^1.0.4"
+  peerDependencies:
+    "@types/react": ^18.0.0 || ^19.0.0
+    react: ^18.0.0 || ^19.0.0
+  checksum: 10c0/b86f9ad1026b041eae54ba9f0840a826805252083bc6add75490ac243d316b19e937cf2e72db5a527193e1fb65adf73a1cd9ef58523559207947b7123dc4d11a
+  languageName: node
+  linkType: hard
+
 "@wagmi/connectors@npm:5.8.1":
   version: 5.8.1
   resolution: "@wagmi/connectors@npm:5.8.1"
@@ -13170,6 +13183,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hls.js@npm:^1.6.2":
+  version: 1.6.2
+  resolution: "hls.js@npm:1.6.2"
+  checksum: 10c0/c8700d88610afa85bf441cd624f6d548c1fea59c0e510fb05be02f9a33660b8a46cb17910ea5179b9d1307ce9242f4e904d8aa98d7f63d0df750d6d0f6e85134
+  languageName: node
+  linkType: hard
+
 "hmac-drbg@npm:^1.0.1":
   version: 1.0.1
   resolution: "hmac-drbg@npm:1.0.1"
@@ -14987,6 +15007,13 @@ __metadata:
     crypt: "npm:0.0.2"
     is-buffer: "npm:~1.1.6"
   checksum: 10c0/14a21d597d92e5b738255fbe7fe379905b8cb97e0a49d44a20b58526a646ec5518c337b817ce0094ca94d3e81a3313879c4c7b510d250c282d53afbbdede9110
+  languageName: node
+  linkType: hard
+
+"media-captions@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "media-captions@npm:1.0.4"
+  checksum: 10c0/62c6df2909b748284e929fe3d169548b42b91ea79374f67f89a313aa529395b024d5be82056613f3e88ebb2e4a86464f6c6a8d569bc7bae2f5542baa350031ba
   languageName: node
   linkType: hard
 
@@ -19475,11 +19502,13 @@ __metadata:
     "@uppy/file-input": "npm:^4.1.2"
     "@uppy/progress-bar": "npm:^4.2.1"
     "@uppy/react": "npm:^4.2.3"
+    "@vidstack/react": "npm:^1.12.13"
     dotenv: "npm:^16.5.0"
     drizzle-kit: "npm:^0.31.1"
     drizzle-orm: "npm:^0.43.1"
     eslint: "npm:^9"
     eslint-config-next: "npm:15.3.2"
+    hls.js: "npm:^1.6.2"
     minidenticons: "npm:^4.2.1"
     next: "npm:15.3.2"
     nextjs-toploader: "npm:^3.8.16"

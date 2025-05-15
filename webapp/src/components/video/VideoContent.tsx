@@ -1,11 +1,20 @@
 "use client";
 
-import { Video } from "@/types/video";
+import { useEffect, useState, useCallback } from "react";
+import VideoPlayer from "./VideoPlayer";
+import { authSigfromSessionSigs } from "../../utils/auth";
+import {
+  getPlaybackUrl,
+  PlaybackAccessRequest,
+} from "@/services/client/playbackApi";
 import { formatDistanceToNow } from "date-fns";
-import { VideoMetadata } from "@/types/video";
 import Link from "next/link";
 import { IPFS_GATEWAY } from "@/config/ipfsConfig";
 import { truncateString } from "@/utils/truncateString";
+import { Video } from "@/types/video";
+import { VideoMetadata } from "@/types/video";
+import { useAuth } from "@/contexts/AuthContext";
+import type { SessionSigsMap } from "@lit-protocol/types";
 
 interface VideoContentProps {
   video: Video;
@@ -16,16 +25,79 @@ interface VideoContentProps {
  * This is a client component that handles the interactive parts of the video view
  *
  * @param video - The video object to display
+ * @param sessionSigs - Optional session signatures for authentication
  */
-export default function VideoContent({ video }: VideoContentProps) {
+export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(true);
+  const { sessionSigs } = useAuth();
+
+  const fetchVideoUrl = useCallback(
+    async (tokenId: string, sessionSigs?: SessionSigsMap) => {
+      setIsLoading(true);
+
+      try {
+        const params: PlaybackAccessRequest = {
+          tokenId,
+        };
+        if (sessionSigs) {
+          params.authSig = authSigfromSessionSigs(sessionSigs);
+        }
+
+        const response = await getPlaybackUrl(params);
+
+        setVideoUrl(response.data);
+        setIsLocked(false);
+      } catch (error) {
+        console.error("Error fetching video URL:", error);
+        setIsLocked(true);
+        setVideoUrl(null);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (video.tokenId) {
+      // First try without authSig (in case video is public)
+      fetchVideoUrl(video.tokenId.toString());
+    }
+  }, [fetchVideoUrl, video.tokenId]);
+
+  useEffect(() => {
+    // If first attempt failed and we have sessionSigs, try again with authSig
+    if (isLocked && !!video.tokenId && sessionSigs) {
+      fetchVideoUrl(video.tokenId.toString(), sessionSigs);
+    }
+  }, [sessionSigs, isLocked, fetchVideoUrl, video.tokenId]);
 
   return (
     <div className="space-y-8">
-      {/* Video Player Placeholder */}
-      <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-        <p className="text-gray-500">Video player coming soon</p>
-      </div>
+      {/* Video Player - Always rendered */}
+      <VideoPlayer
+        src={videoUrl}
+        poster={metadata.coverImage}
+        title={metadata.title}
+        isLoading={isLoading}
+        isAuthenticated={!!sessionSigs}
+        isLocked={isLocked}
+        onPlay={() => {
+          // TODO: Implement analytics or other play tracking
+          console.log("Video started playing");
+        }}
+        onPause={() => {
+          // TODO: Implement analytics or other pause tracking
+          console.log("Video paused");
+        }}
+        onEnded={() => {
+          // TODO: Implement analytics or other end tracking
+          console.log("Video ended");
+        }}
+      />
 
       {/* Video Details */}
       <div className="space-y-4">
