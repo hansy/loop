@@ -17,6 +17,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { SessionSigsMap } from "@lit-protocol/types";
 import type { HLSSrc } from "@vidstack/react";
 
+/**
+ * Interface defining the props for the VideoContent component.
+ * @interface VideoContentProps
+ * @property {Video} video - The video object containing metadata and playback information
+ */
 interface VideoContentProps {
   video: Video;
 }

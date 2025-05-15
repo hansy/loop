@@ -6,14 +6,45 @@ import { formatDistanceToNow } from "date-fns";
 import { VideoMetadata } from "@/types/video";
 import Image from "next/image";
 
+/**
+ * Interface defining the props for the VideoCard component.
+ * @interface VideoCardProps
+ * @property {Video} video - The video object containing metadata and status information
+ */
 interface VideoCardProps {
   video: Video;
 }
 
 /**
- * VideoCard component displays information about a single video
+ * VideoCard is a component that displays a preview card for a single video.
+ * It shows the video thumbnail, title, upload date, and status information.
  *
- * @param video - The video object to display
+ * Features:
+ * - Responsive thumbnail display
+ * - Status badges (Processing, Failed, Ready)
+ * - Upload date display
+ * - Visibility and NSFW indicators
+ * - Conditional link behavior based on video status
+ * - Hover effects and transitions
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <VideoCard
+ *   video={{
+ *     id: "123",
+ *     metadata: {
+ *       title: "My Video",
+ *       coverImage: "https://example.com/cover.jpg",
+ *       creator: "0x123...",
+ *       isNSFW: false
+ *     },
+ *     createdAt: "2024-01-01T00:00:00Z",
+ *     status: "ready",
+ *     visibility: "public"
+ *   }}
+ * />
+ * ```
  */
 export default function VideoCard({ video }: VideoCardProps) {
   const metadata = video.metadata as VideoMetadata;

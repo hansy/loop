@@ -2,6 +2,16 @@ import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { UserCircleIcon } from "@heroicons/react/24/solid";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
+/**
+ * Interface defining the props for the VideoPlayerOverlay component.
+ * @interface VideoPlayerOverlayProps
+ * @property {boolean} isLoading - Whether the video is in a loading state
+ * @property {boolean} isLocked - Whether the video is locked and requires authentication
+ * @property {boolean} [isAuthenticated=false] - Whether the user is authenticated
+ * @property {() => void} [onProfileClick] - Callback when profile button is clicked
+ * @property {() => void} [onAuthenticate] - Callback when authentication is requested
+ * @property {() => void} [onUnlock] - Callback when video unlock is requested
+ */
 interface VideoPlayerOverlayProps {
   isLoading: boolean;
   isLocked: boolean;
@@ -11,6 +21,30 @@ interface VideoPlayerOverlayProps {
   onUnlock?: () => void;
 }
 
+/**
+ * VideoPlayerOverlay is a component that renders different overlay states for the video player.
+ * It handles loading states, locked states, and authentication flows.
+ *
+ * Features:
+ * - Loading spinner during video loading
+ * - Locked state with authentication/unlock options
+ * - Profile button for authenticated users
+ * - Responsive backdrop blur effect
+ * - Conditional rendering based on state
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <VideoPlayerOverlay
+ *   isLoading={true}
+ *   isLocked={false}
+ *   isAuthenticated={true}
+ *   onProfileClick={() => handleProfileClick()}
+ *   onAuthenticate={() => handleAuth()}
+ *   onUnlock={() => handleUnlock()}
+ * />
+ * ```
+ */
 export default function VideoPlayerOverlay({
   isLoading,
   isLocked,
