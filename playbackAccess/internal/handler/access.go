@@ -11,10 +11,56 @@ import (
 	"time"
 
 	"github.com/loop/playbackAccess/internal/auth"
+	"github.com/loop/playbackAccess/internal/db"
 	"github.com/loop/playbackAccess/internal/model"
 	"github.com/loop/playbackAccess/internal/redis"
+	"github.com/loop/playbackAccess/internal/storj"
 	redisgo "github.com/redis/go-redis/v9"
 )
+
+var ctx = context.Background()
+
+// GetVideoMetadata retrieves video metadata from Redis cache or PostgreSQL database.
+// It first attempts to fetch the metadata from Redis. If not found, it queries the
+// database and caches the result in Redis for future requests.
+//
+// Flow:
+// 1. Construct Redis key using tokenId
+// 2. Try to get metadata from Redis
+// 3. If found in Redis, parse and return
+// 4. If not in Redis, query database
+// 5. Cache database result in Redis
+// 6. Return metadata
+func GetVideoMetadata(rdb *redis.Client, dbClient *db.Client, tokenId string) (*model.VideoStore, error) {
+	tokenKey := fmt.Sprintf("token:%s", tokenId)
+
+	// Try to get metadata from Redis first
+	videoStoreStr, err := rdb.GetVideoMetadata(tokenKey)
+	if err == nil {
+		var videoStore model.VideoStore
+		if err := json.Unmarshal([]byte(videoStoreStr), &videoStore); err != nil {
+			return nil, fmt.Errorf("error parsing video metadata from Redis: %w", err)
+		}
+		return &videoStore, nil
+	}
+
+	// If not in Redis, try database
+	if err == redisgo.Nil {
+		videoStore, err := dbClient.GetVideoMetadata(tokenId)
+		if err != nil {
+			return nil, fmt.Errorf("error getting video metadata from database: %w", err)
+		}
+
+		// Store in Redis for future requests
+		if err := rdb.SetVideoMetadata(tokenKey, videoStore); err != nil {
+			log.Printf("Warning: failed to cache video metadata in Redis: %v", err)
+		}
+
+		return videoStore, nil
+	}
+
+	return nil, fmt.Errorf("error fetching video metadata from Redis: %w", err)
+}
 
 // Handler handles video playback access requests.
 // It processes incoming requests, verifies authentication,
@@ -32,7 +78,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	var req model.RequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handleErr(w, "Failed to read request body", err, http.StatusBadRequest)
+		HandleErr(w, "Failed to read request body", err, http.StatusBadRequest)
 		return
 	}
 
@@ -52,26 +98,23 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Initialize Redis client
 	rdb, err := redis.NewClient()
 	if err != nil {
-		handleErr(w, "Failed to initialize Redis client", err, http.StatusInternalServerError)
+		HandleErr(w, "Failed to initialize Redis client", err, http.StatusInternalServerError)
 		return
 	}
 
+	// Initialize database client
+	dbClient, err := db.NewClient()
+	if err != nil {
+		HandleErr(w, "Failed to initialize database client", err, http.StatusInternalServerError)
+		return
+	}
+	defer dbClient.Close()
+
 	// Check token and get video metadata if tokenId is provided
 	if req.TokenId != "" {
-		tokenKey := fmt.Sprintf("token:%s", req.TokenId)
-		videoStoreStr, err := rdb.GetVideoMetadata(tokenKey)
+		videoStore, err := GetVideoMetadata(rdb, dbClient, req.TokenId)
 		if err != nil {
-			if err == redisgo.Nil {
-				handleErr(w, "Video metadata not found", err, http.StatusNotFound)
-			} else {
-				handleErr(w, "Error fetching video metadata", err, http.StatusInternalServerError)
-			}
-			return
-		}
-
-		var videoStore model.VideoStore
-		if err := json.Unmarshal([]byte(videoStoreStr), &videoStore); err != nil {
-			handleErr(w, "Error parsing video metadata", err, http.StatusInternalServerError)
+			HandleErr(w, "Error fetching video metadata", err, http.StatusInternalServerError)
 			return
 		}
 
@@ -81,13 +124,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// Handle public videos
 	if visibility == "public" {
-		createAndSendPublicSharedLink(w, videoId)
+		CreateAndSendPublicSharedLink(w, videoId)
 		return
 	}
 
 	// Verify signature
 	if !auth.VerifySignature(signedMessage, sig, authSigAddress) {
-		handleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+		HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -97,7 +140,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	switch derivedVia {
 	case "lit.action":
 		if err := handleLitAction(r.Context(), rdb, signedMessage, tokenId, authSigAddress); err != nil {
-			handleErr(w, err.Error(), nil, http.StatusUnauthorized)
+			HandleErr(w, err.Error(), nil, http.StatusUnauthorized)
 			return
 		}
 		isAuthorized = true
@@ -108,9 +151,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		val, err := rdb.GetAccess(accessKey)
 		if err != nil {
 			if err == redisgo.Nil {
-				handleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+				HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
 			} else {
-				handleErr(w, "Error checking access", err, http.StatusInternalServerError)
+				HandleErr(w, "Error checking access", err, http.StatusInternalServerError)
 			}
 			return
 		}
@@ -118,20 +161,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		isAuthorized = true
 
 	default:
-		handleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+		HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
 		return
 	}
 
 	if isAuthorized {
-		createAndSendPublicSharedLink(w, videoId)
+		CreateAndSendPublicSharedLink(w, videoId)
 		return
 	}
 
-	handleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+	HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
 }
 
-// handleErr sends an error response to the client
-func handleErr(w http.ResponseWriter, msg string, err error, status int) {
+// HandleErr sends an error response to the client
+func HandleErr(w http.ResponseWriter, msg string, err error, status int) {
 	log.Printf("Error: %s: %v", msg, err)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -178,11 +221,19 @@ func handleLitAction(ctx context.Context, rdb *redis.Client, signedMessage, toke
 	return nil
 }
 
-// createAndSendPublicSharedLink creates and sends a public shared link
-func createAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
-	// TODO: Implement actual link creation
+// CreateAndSendPublicSharedLink generates a public access link for a video using Storj.
+// It retrieves the Storj configuration, constructs the object path, and creates a
+// publicly accessible link for the video content.
+func CreateAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
+	accessGrant, bucket := storj.GetStorjConfig()
+	objectPath := videoId + "/data/"
+
+	url, err := storj.CreatePublicSharedLink(ctx, accessGrant, bucket, objectPath)
+	if err != nil {
+		HandleErr(w, "Failed to create public shared link", err, http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"url": fmt.Sprintf("https://example.com/video/%s", videoId),
-	})
+	json.NewEncoder(w).Encode(map[string]string{"data": url})
 }
