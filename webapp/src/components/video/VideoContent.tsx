@@ -2,11 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import VideoPlayer from "./VideoPlayer";
-import { authSigfromSessionSigs } from "../../utils/auth";
-import {
-  getPlaybackUrl,
-  PlaybackAccessRequest,
-} from "@/services/client/playbackApi";
+import VideoUnlockModal from "./VideoUnlockModal";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { IPFS_GATEWAY } from "@/config/ipfsConfig";
@@ -16,6 +12,9 @@ import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SessionSigsMap } from "@lit-protocol/types";
 import type { HLSSrc } from "@vidstack/react";
+import { authSigfromSessionSigs } from "@/utils/auth";
+import { getPlaybackUrl } from "@/services/client/playbackApi";
+import { PlaybackAccessRequest } from "@/services/client/playbackApi";
 
 /**
  * Interface defining the props for the VideoContent component.
@@ -31,11 +30,11 @@ interface VideoContentProps {
  * This is a client component that handles the interactive parts of the video view
  *
  * @param video - The video object to display
- * @param sessionSigs - Optional session signatures for authentication
  */
 export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
   const [src, setSrc] = useState<HLSSrc | undefined>(undefined);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const { sessionSigs } = useAuth();
@@ -87,7 +86,7 @@ export function VideoContent({ video }: VideoContentProps) {
 
   return (
     <div className="space-y-8">
-      {/* Video Player - Always rendered */}
+      {/* Video Player */}
       <VideoPlayer
         src={src}
         poster={metadata.coverImage}
@@ -113,9 +112,7 @@ export function VideoContent({ video }: VideoContentProps) {
         onAuthenticate={() => {
           console.log("Authenticate clicked");
         }}
-        onUnlock={() => {
-          console.log("Unlock clicked");
-        }}
+        onUnlockClick={() => setIsUnlockModalOpen(true)}
       />
 
       {/* Video Details */}
@@ -156,6 +153,14 @@ export function VideoContent({ video }: VideoContentProps) {
           </div>
         )}
       </div>
+
+      {/* Unlock Modal */}
+      <VideoUnlockModal
+        isOpen={isUnlockModalOpen}
+        onClose={() => setIsUnlockModalOpen(false)}
+        video={metadata}
+        onPurchase={() => {}}
+      />
     </div>
   );
 }

@@ -37,6 +37,7 @@
     "@vidstack/react": "^1.12.13",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
+    "framer-motion": "^12.11.4",
     "hls.js": "^1.6.2",
     "minidenticons": "^4.2.1",
     "next": "15.3.2",

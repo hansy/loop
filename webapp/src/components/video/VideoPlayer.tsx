@@ -20,13 +20,13 @@ import VideoPlayerOverlay from "./VideoPlayerOverlay";
  * @property {boolean} [isLoading=false] - Whether the video is in a loading state
  * @property {boolean} isLocked - Whether the video is locked and requires authentication
  * @property {boolean} isAuthenticated - Whether the user is authenticated
+ * @property {VideoMetadata} video - Metadata for the video
  * @property {() => void} [onPlay] - Callback when video starts playing
  * @property {() => void} [onPause] - Callback when video is paused
  * @property {() => void} [onEnded] - Callback when video playback ends
- * @property {() => void} [onVerifyAccess] - Callback to verify video access
  * @property {() => void} [onProfileClick] - Callback when profile button is clicked
  * @property {() => void} [onAuthenticate] - Callback when authentication is requested
- * @property {() => void} [onUnlock] - Callback when video unlock is requested
+ * @property {() => void} [onUnlockClick] - Callback when video unlock is requested
  */
 interface VideoPlayerProps {
   src: HLSSrc | undefined;
@@ -43,43 +43,34 @@ interface VideoPlayerProps {
   onPlay?: () => void;
   onPause?: () => void;
   onEnded?: () => void;
-  onVerifyAccess?: () => void;
   onProfileClick?: () => void;
   onAuthenticate?: () => void;
-  onUnlock?: () => void;
+  onUnlockClick?: () => void;
 }
 
 /**
- * VideoPlayer is a stateless component that renders a video player using Vidstack.
- * It supports basic video playback with optional poster images and captions.
- * The player can handle different states like loading, errors, and locked content.
+ * VideoPlayer is a component that renders a video player with various features.
+ * It uses Vidstack for video playback and includes custom overlays for different states.
  *
  * Features:
- * - HLS video playback support
- * - Loading state with spinner
- * - Locked state with authentication flow
- * - Optional poster images
+ * - HLS video playback
+ * - Custom poster image
  * - Caption support
- * - Customizable callbacks for player events
+ * - Loading state
+ * - Locked state with authentication
+ * - Profile integration
+ * - Event callbacks
  *
  * @component
  * @example
  * ```tsx
  * <VideoPlayer
- *   src={{
- *     src: "https://example.com/video.m3u8",
- *     type: "application/x-mpegurl"
- *   }}
+ *   src={{ src: "https://example.com/video.m3u8", type: "application/x-mpegurl" }}
  *   poster="https://example.com/poster.jpg"
  *   title="My Video"
- *   isLoading={false}
- *   isLocked={true}
- *   isAuthenticated={false}
- *   onPlay={() => console.log("Video started")}
- *   onPause={() => console.log("Video paused")}
- *   onEnded={() => console.log("Video ended")}
- *   onAuthenticate={() => handleAuth()}
- *   onUnlock={() => handleUnlock()}
+ *   isLocked={false}
+ *   isAuthenticated={true}
+ *   onPlay={() => console.log("Video started playing")}
  * />
  * ```
  */
@@ -89,54 +80,47 @@ export default function VideoPlayer({
   title,
   captions,
   isLoading = false,
-  isLocked = true,
-  isAuthenticated = false,
+  isLocked,
+  isAuthenticated,
   onPlay,
   onPause,
   onEnded,
   onProfileClick,
   onAuthenticate,
-  onUnlock,
+  onUnlockClick,
 }: VideoPlayerProps) {
-  console.log(src);
   return (
-    <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-      <MediaPlayer
-        className="w-full h-full"
-        title={title}
-        onPlay={onPlay}
-        onPause={onPause}
-        onEnded={onEnded}
-        playsInline
-        autoPlay={false}
-        muted={false}
-        src={src}
-      >
-        <MediaProvider>
-          <Poster className="vds-poster" src={poster} alt={title} />
-          {captions?.map((caption) => (
-            <Track
-              key={caption.src}
-              src={caption.src}
-              label={caption.label}
-              language={caption.language}
-              kind="captions"
-              default
-            />
-          ))}
-        </MediaProvider>
+    <MediaPlayer
+      className="w-full aspect-video bg-black"
+      title={title}
+      src={src}
+      onPlay={onPlay}
+      onPause={onPause}
+      onEnded={onEnded}
+    >
+      <MediaProvider>
+        <Poster src={poster} />
+        {captions?.map((caption) => (
+          <Track
+            key={caption.src}
+            src={caption.src}
+            label={caption.label}
+            language={caption.language}
+            kind="captions"
+          />
+        ))}
+      </MediaProvider>
 
-        <DefaultVideoLayout icons={defaultLayoutIcons} />
+      <DefaultVideoLayout icons={defaultLayoutIcons} />
 
-        <VideoPlayerOverlay
-          isLoading={isLoading}
-          isLocked={isLocked}
-          isAuthenticated={isAuthenticated}
-          onProfileClick={onProfileClick}
-          onAuthenticate={onAuthenticate}
-          onUnlock={onUnlock}
-        />
-      </MediaPlayer>
-    </div>
+      <VideoPlayerOverlay
+        isLoading={isLoading}
+        isLocked={isLocked}
+        isAuthenticated={isAuthenticated}
+        onProfileClick={onProfileClick}
+        onAuthenticate={onAuthenticate}
+        onUnlockClick={onUnlockClick}
+      />
+    </MediaPlayer>
   );
 }

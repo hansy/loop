@@ -1,5 +1,4 @@
-import { LockClosedIcon } from "@heroicons/react/24/outline";
-import { UserCircleIcon } from "@heroicons/react/24/solid";
+import { UserCircleIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 /**
@@ -10,15 +9,15 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
  * @property {boolean} [isAuthenticated=false] - Whether the user is authenticated
  * @property {() => void} [onProfileClick] - Callback when profile button is clicked
  * @property {() => void} [onAuthenticate] - Callback when authentication is requested
- * @property {() => void} [onUnlock] - Callback when video unlock is requested
+ * @property {() => void} [onUnlockClick] - Callback when video unlock is requested
  */
 interface VideoPlayerOverlayProps {
   isLoading: boolean;
   isLocked: boolean;
-  isAuthenticated?: boolean;
+  isAuthenticated: boolean;
   onProfileClick?: () => void;
   onAuthenticate?: () => void;
-  onUnlock?: () => void;
+  onUnlockClick?: () => void;
 }
 
 /**
@@ -41,7 +40,7 @@ interface VideoPlayerOverlayProps {
  *   isAuthenticated={true}
  *   onProfileClick={() => handleProfileClick()}
  *   onAuthenticate={() => handleAuth()}
- *   onUnlock={() => handleUnlock()}
+ *   onUnlockClick={() => handleUnlockClick()}
  * />
  * ```
  */
@@ -51,7 +50,7 @@ export default function VideoPlayerOverlay({
   isAuthenticated = false,
   onProfileClick,
   onAuthenticate,
-  onUnlock,
+  onUnlockClick,
 }: VideoPlayerOverlayProps) {
   if (!isLoading && !isLocked) {
     return null;
@@ -79,7 +78,7 @@ export default function VideoPlayerOverlay({
             </div>
             <button
               type="button"
-              onClick={isAuthenticated ? onUnlock : onAuthenticate}
+              onClick={isAuthenticated ? onUnlockClick : onAuthenticate}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               {isAuthenticated ? "Unlock video" : "Verify access"}
