@@ -10,12 +10,16 @@ import { truncateString } from "@/utils/truncateString";
 import { Video } from "@/types/video";
 import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
-import type { SessionSigsMap } from "@lit-protocol/types";
+import type { SessionSigsMap, AuthSig } from "@lit-protocol/types";
 import type { MediaSrc } from "@vidstack/react";
 import { authSigfromSessionSigs } from "@/utils/auth";
 import { getPlaybackUrl } from "@/services/client/playbackApi";
 import { PlaybackAccessRequest } from "@/services/client/playbackApi";
 import { usePrivy } from "@privy-io/react-auth";
+import { LitService } from "@/services/client/encrpytion/litService.client";
+import { camelCaseString } from "@/utils/camelCaseString";
+import { DEFAULT_CHAIN } from "@/config/chainConfig";
+import { randomBytes } from "crypto";
 /**
  * Interface defining the props for the VideoContent component.
  * @interface VideoContentProps
@@ -37,24 +41,23 @@ export function VideoContent({ video }: VideoContentProps) {
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
+  const [litAuthSig, setLitAuthSig] = useState<AuthSig | undefined>(undefined);
   const { sessionSigs } = useAuth();
   const { user } = usePrivy();
 
-  const handleUnlock = async (type: "token" | "payment") => {
-    console.log("Unlocking video with type:", type);
+  const handleUnlockError = () => {
+    console.error("Unlock failed:");
   };
 
   const fetchVideoUrl = useCallback(
-    async (tokenId: string, sessionSigs?: SessionSigsMap) => {
+    async (tokenId: string, authSig?: AuthSig) => {
       setIsLoading(true);
 
       try {
         const params: PlaybackAccessRequest = {
           tokenId,
+          authSig,
         };
-        if (sessionSigs) {
-          params.authSig = authSigfromSessionSigs(sessionSigs);
-        }
 
         const path = await getPlaybackUrl(params);
 
@@ -75,19 +78,58 @@ export function VideoContent({ video }: VideoContentProps) {
     []
   );
 
-  // useEffect(() => {
-  //   if (video.tokenId) {
-  //     // First try without authSig (in case video is public)
-  //     fetchVideoUrl(video.tokenId.toString());
-  //   }
-  // }, [fetchVideoUrl, video.tokenId]);
+  const getLitAuthSig = useCallback(
+    async (ss: SessionSigsMap | null) => {
+      if (!ss) {
+        return;
+      }
 
-  // useEffect(() => {
-  //   // If first attempt failed and we have sessionSigs, try again with authSig
-  //   if (isLocked && !!video.tokenId && !isLoading && sessionSigs) {
-  //     fetchVideoUrl(video.tokenId.toString(), sessionSigs);
-  //   }
-  // }, [sessionSigs, isLocked, fetchVideoUrl, video.tokenId, isLoading]);
+      try {
+        const litClient = new LitService();
+        const authSig = await litClient.runLitAction(ss, {
+          chain: camelCaseString(DEFAULT_CHAIN.name),
+          nonce: randomBytes(16).toString("hex"),
+          exp: Date.now() + 3 * 60 * 1000,
+          ciphertext: metadata.playbackAccess?.ciphertext,
+          dataToEncryptHash: metadata.playbackAccess?.dataToEncryptHash,
+          accessControlConditions: metadata.playbackAccess?.acl,
+        });
+
+        setLitAuthSig(authSig);
+
+        await litClient.disconnect();
+      } catch (error) {
+        console.error("Error fetching Lit auth sig:", error);
+
+        setLitAuthSig(undefined);
+      }
+    },
+    [metadata.playbackAccess]
+  );
+
+  const handleUnlockSuccess = useCallback(async () => {
+    await getLitAuthSig(sessionSigs);
+  }, [sessionSigs, getLitAuthSig]);
+
+  useEffect(() => {
+    if (sessionSigs) {
+      getLitAuthSig(sessionSigs);
+    }
+  }, [sessionSigs, getLitAuthSig]);
+
+  useEffect(() => {
+    if (video.tokenId) {
+      // First try without authSig (in case video is public)
+      fetchVideoUrl(video.tokenId.toString());
+    }
+  }, [fetchVideoUrl, video.tokenId]);
+
+  useEffect(() => {
+    // If first attempt failed and we have sessionSigs, try again with authSig
+    if (isLocked && !!video.tokenId && !isLoading && litAuthSig) {
+      fetchVideoUrl(video.tokenId.toString(), litAuthSig);
+    }
+  }, [isLocked, fetchVideoUrl, video.tokenId, isLoading, litAuthSig]);
 
   return (
     <div className="space-y-8">
@@ -165,11 +207,8 @@ export function VideoContent({ video }: VideoContentProps) {
         onClose={() => setIsUnlockModalOpen(false)}
         metadata={metadata}
         handlers={{
-          onUnlockInitiated: (option) => console.log("Unlock started:", option),
-          onUnlockSuccess: (option) =>
-            console.log("Unlock successful:", option),
-          onUnlockError: (option, error) =>
-            console.error("Unlock failed:", error),
+          onUnlockSuccess: handleUnlockSuccess,
+          onUnlockError: handleUnlockError,
         }}
         hasEmbeddedWallet={user?.wallet?.connectorType === "embedded"}
       />

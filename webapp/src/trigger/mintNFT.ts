@@ -35,7 +35,7 @@ export const mintNFT = task({
 
       if (newMetadata.playbackAccess) {
         // Replace the tokenId placeholder with the actual tokenId
-        const newMetadataStr = JSON.stringify(newMetadata).replace(
+        const newMetadataStr = JSON.stringify(newMetadata).replaceAll(
           ACC_TOKEN_PLACEHOLDER,
           tokenId
         );
