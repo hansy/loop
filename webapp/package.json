@@ -22,6 +22,7 @@
     "@lit-protocol/encryption": "^7.1.1",
     "@lit-protocol/lit-node-client": "^7.1.1",
     "@neondatabase/serverless": "^1.0.0",
+    "@permissionless/wagmi": "^0.1.4",
     "@privy-io/react-auth": "^2.13.1",
     "@privy-io/server-auth": "^1.22.0",
     "@privy-io/wagmi": "^1.0.3",

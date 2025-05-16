@@ -45,3 +45,13 @@ export const wagmiConfig = createConfig({
     [baseSepolia.id]: http(transport("client", baseSepolia.name)),
   },
 });
+
+export const permissionlessConfig = {
+  capabilities: {
+    paymasterService: {
+      [DEFAULT_CHAIN.id]: {
+        url: process.env.NEXT_PUBLIC_PAYMASTER_RPC_ENDPOINT!,
+      },
+    },
+  },
+};

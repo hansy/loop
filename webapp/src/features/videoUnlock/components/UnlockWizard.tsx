@@ -9,7 +9,14 @@ import type {
 } from "../types";
 import { unlockReducer, extractUnlockOptions, initialState } from "../reducer";
 import { deriveAccessControl } from "../utils/accessControl";
+import { signPermit } from "../utils/erc20";
 import PurchaseStatus from "./PurchaseStatus";
+import { usePublicClient, useWalletClient } from "wagmi";
+import { generateNonce } from "../utils/erc20";
+import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
+import { useSendTransaction } from "@permissionless/wagmi";
+import { encodeFunctionData } from "viem";
+import { PurchaseManagerABI } from "@/abis/purchaseManager";
 
 export interface UnlockWizardRef {
   resetState: () => void;
@@ -43,7 +50,13 @@ const UnlockWizard = forwardRef<UnlockWizardRef, UnlockWizardProps>(
     const { selectedOption, isProcessing } = state;
     const [purchaseStatus, setPurchaseStatus] =
       useState<PurchaseStatusType>("idle");
-
+    const publicClient = usePublicClient();
+    const { data: walletClient } = useWalletClient();
+    const {
+      sendTransaction,
+      data: transactionReference,
+      isPending,
+    } = useSendTransaction();
     useImperativeHandle(ref, () => ({
       resetState: () => {
         dispatch({ type: "RESET_OPTION" });
@@ -82,11 +95,40 @@ const UnlockWizard = forwardRef<UnlockWizardRef, UnlockWizardProps>(
         dispatch({ type: "SET_PROCESSING", payload: true });
         handlers.onUnlockInitiated(selectedOption);
 
-        // TODO: Implement actual purchase logic
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulated delay
+        const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 5);
 
-        setPurchaseStatus("success");
-        handlers.onUnlockSuccess(selectedOption);
+        if (walletClient && publicClient) {
+          const nonce = await generateNonce(
+            publicClient,
+            walletClient.account.address
+          );
+
+          const signature = await signPermit(
+            walletClient,
+            selectedOption.price!,
+            CONTRACT_ADDRESSES.PURCHASE_MANAGER,
+            deadline,
+            nonce
+          );
+
+          const callData = encodeFunctionData({
+            abi: PurchaseManagerABI,
+            functionName: "purchaseVideoWithPermit",
+            args: [
+              BigInt(metadata.tokenId),
+              walletClient.account.address,
+              deadline,
+              Number(signature.v),
+              signature.r,
+              signature.s,
+            ],
+          });
+
+          sendTransaction({
+            to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
+            data: callData,
+          });
+        }
       } catch (error) {
         console.error("Unlock failed:", error);
         setPurchaseStatus("error");

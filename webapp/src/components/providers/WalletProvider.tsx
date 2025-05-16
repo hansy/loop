@@ -3,11 +3,13 @@
 import React from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { WagmiProvider } from "@privy-io/wagmi";
+import { PermissionlessProvider } from "@permissionless/wagmi";
 
 import {
   activeChainConfig,
   LOGIN_METHODS,
   wagmiConfig,
+  permissionlessConfig,
 } from "@/config/chainConfig";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -45,7 +47,13 @@ export default function PrivyClientProvider({
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig}>{children}</WagmiProvider>
+        <WagmiProvider config={wagmiConfig}>
+          <PermissionlessProvider
+            capabilities={permissionlessConfig.capabilities}
+          >
+            {children}
+          </PermissionlessProvider>
+        </WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
   );

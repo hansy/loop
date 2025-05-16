@@ -5182,6 +5182,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@permissionless/wagmi@npm:^0.1.4":
+  version: 0.1.4
+  resolution: "@permissionless/wagmi@npm:0.1.4"
+  peerDependencies:
+    wagmi: ^2.12.8
+  checksum: 10c0/a6e0d7638b1a1e2e6319b245b6d20669090f6f7916392ca85294575540b54c145378df9a39d0f4a7682eeffa322557542cd277b468da7fb92b8b8b2452fcf13d
+  languageName: node
+  linkType: hard
+
 "@pkgjs/parseargs@npm:^0.11.0":
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
@@ -19522,6 +19531,7 @@ __metadata:
     "@lit-protocol/encryption": "npm:^7.1.1"
     "@lit-protocol/lit-node-client": "npm:^7.1.1"
     "@neondatabase/serverless": "npm:^1.0.0"
+    "@permissionless/wagmi": "npm:^0.1.4"
     "@privy-io/react-auth": "npm:^2.13.1"
     "@privy-io/server-auth": "npm:^1.22.0"
     "@privy-io/wagmi": "npm:^1.0.3"
