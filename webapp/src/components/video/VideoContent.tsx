@@ -15,6 +15,7 @@ import type { MediaSrc } from "@vidstack/react";
 import { authSigfromSessionSigs } from "@/utils/auth";
 import { getPlaybackUrl } from "@/services/client/playbackApi";
 import { PlaybackAccessRequest } from "@/services/client/playbackApi";
+import { usePrivy } from "@privy-io/react-auth";
 /**
  * Interface defining the props for the VideoContent component.
  * @interface VideoContentProps
@@ -37,6 +38,7 @@ export function VideoContent({ video }: VideoContentProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const { sessionSigs } = useAuth();
+  const { user } = usePrivy();
 
   const handleUnlock = async (type: "token" | "payment") => {
     console.log("Unlocking video with type:", type);
@@ -162,7 +164,14 @@ export function VideoContent({ video }: VideoContentProps) {
         isOpen={isUnlockModalOpen}
         onClose={() => setIsUnlockModalOpen(false)}
         metadata={metadata}
-        onUnlock={handleUnlock}
+        handlers={{
+          onUnlockInitiated: (option) => console.log("Unlock started:", option),
+          onUnlockSuccess: (option) =>
+            console.log("Unlock successful:", option),
+          onUnlockError: (option, error) =>
+            console.error("Unlock failed:", error),
+        }}
+        hasEmbeddedWallet={user?.wallet?.connectorType === "embedded"}
       />
     </div>
   );

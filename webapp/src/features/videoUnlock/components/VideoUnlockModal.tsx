@@ -1,4 +1,4 @@
-import { useReducer } from "react";
+import { useReducer, useRef } from "react";
 import { Dialog } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
@@ -35,7 +35,11 @@ function modalReducer(state: ModalState, action: ModalAction): ModalState {
  *   isOpen={isModalOpen}
  *   onClose={handleClose}
  *   metadata={videoMetadata}
- *   onUnlock={handleUnlock}
+ *   handlers={{
+ *     onUnlockInitiated: (option) => console.log('Unlock started:', option),
+ *     onUnlockSuccess: (option) => console.log('Unlock successful:', option),
+ *     onUnlockError: (option, error) => console.error('Unlock failed:', error),
+ *   }}
  * />
  * ```
  */
@@ -43,14 +47,17 @@ export default function VideoUnlockModal({
   isOpen,
   onClose,
   metadata,
-  onUnlock,
+  handlers,
+  hasEmbeddedWallet,
 }: VideoUnlockModalProps) {
   const [state, dispatch] = useReducer(modalReducer, {
     currentStep: "options",
   });
+  const wizardRef = useRef<{ resetState: () => void }>(null);
 
   const handleClose = () => {
     dispatch({ type: "RESET" });
+    wizardRef.current?.resetState();
     onClose();
   };
 
@@ -67,7 +74,6 @@ export default function VideoUnlockModal({
           <div className="flex items-center justify-between">
             {state.currentStep === "unlock" && (
               <button
-                type="button"
                 onClick={() =>
                   dispatch({ type: "SET_STEP", payload: "options" })
                 }
@@ -82,7 +88,6 @@ export default function VideoUnlockModal({
                 : "Complete Unlock"}
             </Dialog.Title>
             <button
-              type="button"
               onClick={handleClose}
               className="ml-auto rounded-full p-1 hover:bg-gray-100"
             >
@@ -92,10 +97,12 @@ export default function VideoUnlockModal({
 
           <div className="mt-4">
             <UnlockWizard
+              ref={wizardRef}
               metadata={metadata}
-              onUnlock={onUnlock}
+              handlers={handlers}
               onStepChange={handleStepChange}
               currentStep={state.currentStep}
+              hasEmbeddedWallet={hasEmbeddedWallet}
             />
           </div>
         </Dialog.Panel>

@@ -13,16 +13,31 @@ export interface UnlockOption {
   };
 }
 
+export type PurchaseStatus =
+  | "idle"
+  | "validating"
+  | "purchasing"
+  | "success"
+  | "error";
+
+export interface UnlockHandlers {
+  onUnlockInitiated: (option: UnlockOption) => void;
+  onUnlockSuccess: (option: UnlockOption) => void;
+  onUnlockError: (option: UnlockOption, error: Error) => void;
+}
+
 export interface UnlockWizardProps {
   metadata: VideoMetadata;
-  onUnlock: (type: "token" | "payment") => Promise<void>;
+  handlers: UnlockHandlers;
   onStepChange: (step: "options" | "unlock") => void;
   currentStep: "options" | "unlock";
+  hasEmbeddedWallet: boolean;
 }
 
 export interface VideoUnlockModalProps {
   isOpen: boolean;
   onClose: () => void;
   metadata: VideoMetadata;
-  onUnlock: (type: "token" | "payment") => Promise<void>;
+  handlers: UnlockHandlers;
+  hasEmbeddedWallet: boolean;
 }
