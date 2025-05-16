@@ -2,8 +2,8 @@
 
 import VideoPlayer from "./VideoPlayer";
 import type { VideoMetadata } from "@/types";
-import { useState, useEffect, useRef } from "react";
-import type { SessionSigsMap } from "@lit-protocol/types";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { SessionSigsMap, AuthSig } from "@lit-protocol/types";
 
 // Basic definition for MediaSrc, adjust if a more specific type exists
 type MediaSrc = string | undefined;
@@ -18,6 +18,7 @@ interface AuthResultMessagePayload {
   success: boolean;
   videoId?: string;
   sessionSigs?: SessionSigsMap;
+  litAuthSig?: AuthSig | null;
 }
 interface AuthResultMessage {
   type: "AUTH_RESULT";
@@ -31,34 +32,55 @@ interface Props {
 }
 
 export default function EmbeddedVideoContent({ metadata }: Props) {
-  const [_src, _setSrc] = useState<MediaSrc>(undefined); // TODO: Implement video source loading logic using _setSrc to display the video upon successful auth.
-  const [isLoading, setIsLoading] = useState(false); // TODO: Manage loading state (e.g., when fetching video data or during auth) using _setIsLoading.
-  const [isLocked, setIsLocked] = useState(true);
+  const [src, setSrc] = useState<MediaSrc>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
   const [sessionSigs, setSessionSigs] = useState<SessionSigsMap | undefined>(
     undefined
   );
+  const [playerLitAuthSig, setPlayerLitAuthSig] = useState<
+    AuthSig | null | undefined
+  >(undefined);
+
   const authWindowRef = useRef<Window | null>(null);
-  const initialRequestSentRef = useRef(false); // Flag to track if initial request was sent
+  const initialRequestSentRef = useRef(false);
+
+  const fetchVideoUrl = useCallback(async () => {
+    if (!metadata.id) return;
+    console.log(
+      "Placeholder: fetchVideoUrl called. Would fetch with videoId:",
+      metadata.id,
+      "and LitAuthSig:",
+      playerLitAuthSig
+    );
+    if (playerLitAuthSig) {
+      setIsLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setSrc(`simulated_playback_url_for_${metadata.id}`);
+      setIsLoading(false);
+    } else if (!playerLitAuthSig && sessionSigs) {
+      console.log(
+        "Authenticated, but no direct LitAuthSig for video playback received."
+      );
+    }
+  }, [metadata.id, playerLitAuthSig, sessionSigs]);
+
+  useEffect(() => {
+    if (playerLitAuthSig) {
+      fetchVideoUrl();
+    }
+  }, [playerLitAuthSig, fetchVideoUrl]);
 
   useEffect(() => {
     const handleAuthMessage = (event: MessageEvent) => {
-      // Ensure message is from the auth window we opened
       if (event.source !== authWindowRef.current) {
-        // Optionally log ignored messages from other sources for debugging, then return
-        // console.log("EmbeddedVideoContent: Ignoring message not from auth window", event.origin, event.data);
         return;
       }
-
-      // We've confirmed the source is our authWindow, so we expect its origin
-      // to be the same as the page we loaded into it.
-      // No need for an explicit origin check here if event.source is strictly checked,
-      // but if an origin check was desired, it would be against the authPageUrl's origin.
 
       console.log(
         "Player received message from auth page (source confirmed):",
         event.data
       );
-      const message = event.data as MessageFromAuthPage; // Assumes MessageFromAuthPage is defined (AUTH_PAGE_READY | AUTH_RESULT)
+      const message = event.data as MessageFromAuthPage;
 
       if (message?.type === "AUTH_PAGE_READY") {
         if (!initialRequestSentRef.current) {
@@ -70,7 +92,7 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
               type: "REQUEST_AUTHENTICATION",
               payload: { videoId: metadata.id },
             },
-            event.origin // Reply to the actual origin that sent AUTH_PAGE_READY
+            event.origin
           );
           initialRequestSentRef.current = true;
         } else {
@@ -79,38 +101,42 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
           );
         }
       } else if (message?.type === "AUTH_RESULT") {
+        setIsLoading(false);
         console.log("Received AUTH_RESULT:", message.payload);
         if (message.payload?.success && message.payload?.sessionSigs) {
           setSessionSigs(message.payload.sessionSigs);
-          // TODO: Potentially call _setSrc here with the actual video URL
-          // TODO: Potentially set _setIsLoading(false) if a loading process was started
+          setPlayerLitAuthSig(message.payload.litAuthSig);
+
+          if (message.payload.litAuthSig) {
+            console.log(
+              "AUTH_RESULT: Success with LitAuthSig. Video should unlock."
+            );
+          } else {
+            console.log(
+              "AUTH_RESULT: Success but no LitAuthSig (access denied or not applicable)."
+            );
+          }
         } else {
           console.warn("Authentication failed or no sessionSigs received.");
-          // TODO: Potentially set _setIsLoading(false) if a loading process was started
         }
         setIsLoading(false);
-        // if (authWindowRef.current && !authWindowRef.current.closed) {
-        //   authWindowRef.current.close(); // Temporarily commented out for debugging
-        // }
-        initialRequestSentRef.current = false; // Reset for potential future auth attempts
+        initialRequestSentRef.current = false;
       }
     };
 
     window.addEventListener("message", handleAuthMessage);
     return () => {
       window.removeEventListener("message", handleAuthMessage);
-      // Clean up: close auth window if component unmounts and window is still open
-      if (authWindowRef.current && !authWindowRef.current.closed) {
-        authWindowRef.current.close();
-      }
+      // if (authWindowRef.current && !authWindowRef.current.closed) {
+      //   authWindowRef.current.close(); // Temporarily commented out for debugging
+      // }
     };
-  }, [metadata.id]); // Dependencies: metadata.id for REQUEST_AUTHENTICATION
+  }, [metadata.id, fetchVideoUrl]);
 
   const handleAuthenticate = () => {
     console.log("Authenticate clicked in EmbeddedVideoContent");
     setIsLoading(true);
-    // TODO: Potentially set _setIsLoading(true) here
-    initialRequestSentRef.current = false; // Reset flag each time auth is initiated
+    initialRequestSentRef.current = false;
 
     const playerDomain = window.location.origin;
     const authPageUrl = `/videos/${
@@ -120,44 +146,39 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
     if (authWindowRef.current && !authWindowRef.current.closed) {
       authWindowRef.current.close();
     }
-
     const newAuthWindow = window.open(
       authPageUrl,
       "authWindow",
       "width=500,height=600,scrollbars=yes"
     );
     authWindowRef.current = newAuthWindow;
-
-    if (newAuthWindow) {
-      newAuthWindow.focus();
-    }
+    if (newAuthWindow) newAuthWindow.focus();
   };
 
   return (
     <>
       <VideoPlayer
-        src={_src}
+        src={src}
         poster={metadata.coverImage}
         title={metadata.title}
         isLoading={isLoading}
         isAuthenticated={!!sessionSigs}
-        isLocked={isLocked}
-        onPlay={() => {
-          console.log("Video started playing");
-        }}
-        onPause={() => {
-          console.log("Video paused");
-        }}
-        onEnded={() => {
-          console.log("Video ended");
-        }}
-        onProfileClick={() => {
-          console.log("Profile clicked");
-        }}
+        isLocked={!!!src}
+        onPlay={() => console.log("Video started playing")}
+        onPause={() => console.log("Video paused")}
+        onEnded={() => console.log("Video ended")}
+        onProfileClick={() => console.log("Profile clicked")}
         onAuthenticate={handleAuthenticate}
         onUnlockClick={() => {
-          console.log("Unlock clicked - currently same as authenticate");
-          handleAuthenticate();
+          console.log("VideoPlayer native onUnlockClick triggered.");
+          if (!isLoading && !!src) {
+            console.log("Attempting to re-authenticate via onUnlockClick.");
+            handleAuthenticate();
+          } else if (isLoading) {
+            console.log(
+              "Already authenticating, onUnlockClick does nothing further."
+            );
+          }
         }}
       />
     </>
