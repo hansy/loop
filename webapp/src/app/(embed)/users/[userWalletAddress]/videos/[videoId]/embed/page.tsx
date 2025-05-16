@@ -17,7 +17,7 @@ interface PageProps {
  * @param params - Route parameters containing videoId.
  */
 export default async function VideoEmbedPage({ params }: PageProps) {
-  const { videoId } = params;
+  const { videoId } = await params;
   const video = await findVideoById(videoId);
 
   if (!video) {
