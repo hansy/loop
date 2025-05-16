@@ -87,9 +87,7 @@ export function AddRuleSlideover({
   }
 
   // Handle form submission
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  function handleSubmit() {
     // Validate the rule
     if (rule.type === "token") {
       const validation = validateTokenRule(rule);
@@ -114,10 +112,7 @@ export function AddRuleSlideover({
               transition
               className="pointer-events-auto w-screen max-w-md transform transition duration-500 ease-in-out data-closed:translate-x-full sm:duration-700"
             >
-              <form
-                className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl"
-                onSubmit={handleSubmit}
-              >
+              <div className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
                 <div className="h-0 flex-1 overflow-y-auto">
                   <div className="bg-indigo-700 px-4 py-6 sm:px-6">
                     <div className="flex items-center justify-between">
@@ -191,13 +186,14 @@ export function AddRuleSlideover({
                     Cancel
                   </button>
                   <button
+                    onClick={handleSubmit}
                     type="button"
                     className="ml-4 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                   >
                     Save
                   </button>
                 </div>
-              </form>
+              </div>
             </DialogPanel>
           </div>
         </div>

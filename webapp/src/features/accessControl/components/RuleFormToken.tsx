@@ -220,7 +220,7 @@ export function RuleFormToken({
             htmlFor="tokenId"
             className="block text-sm/6 font-medium text-gray-900"
           >
-            Token ID
+            Token ID {subtype === "ERC721" ? "(optional)" : ""}
           </label>
           <div className="mt-2">
             <input
