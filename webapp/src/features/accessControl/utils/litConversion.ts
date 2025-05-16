@@ -34,7 +34,7 @@ function createBalanceOfCondition(
   const isERC20 = subtype === "ERC20";
 
   return {
-    conditionType: "evmContract",
+    conditionType: "evmBasic",
     contractAddress: contract,
     standardContractType: subtype,
     method: "balanceOf",
