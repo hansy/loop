@@ -78,6 +78,7 @@ type VideoStore struct {
 type StandardizedErrorDetail struct {
 	Message string      `json:"message"`
 	Code    string      `json:"code,omitempty"`
+	Details interface{} `json:"details,omitempty"`
 	Stack   string      `json:"stack,omitempty"`
 }
 
