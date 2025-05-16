@@ -59,7 +59,7 @@ export const signPermit = async (
   nonce: bigint
 ): Promise<Signature> => {
   const domain: TypedDataDomain = {
-    name: "USD Coin",
+    name: "USDC",
     version: "2",
     chainId: DEFAULT_CHAIN.id,
     verifyingContract: CONTRACT_ADDRESSES.USDC,

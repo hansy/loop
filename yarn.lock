@@ -5182,15 +5182,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@permissionless/wagmi@npm:^0.1.4":
-  version: 0.1.4
-  resolution: "@permissionless/wagmi@npm:0.1.4"
-  peerDependencies:
-    wagmi: ^2.12.8
-  checksum: 10c0/a6e0d7638b1a1e2e6319b245b6d20669090f6f7916392ca85294575540b54c145378df9a39d0f4a7682eeffa322557542cd277b468da7fb92b8b8b2452fcf13d
-  languageName: node
-  linkType: hard
-
 "@pkgjs/parseargs@npm:^0.11.0":
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
@@ -16311,6 +16302,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"permissionless@npm:^0.2.47":
+  version: 0.2.47
+  resolution: "permissionless@npm:0.2.47"
+  peerDependencies:
+    ox: 0.6.7
+    viem: ^2.28.1
+  peerDependenciesMeta:
+    ox:
+      optional: true
+  checksum: 10c0/932b39e7b52c15f2bcb6ae44221e68ee554eebb03f7d10cfe3eb3bca06f47d80df0d9ef390075d8431c0b7b1389cce6aab4c616f402cc524c462b6bf64faa31c
+  languageName: node
+  linkType: hard
+
 "pg-cloudflare@npm:^1.2.5":
   version: 1.2.5
   resolution: "pg-cloudflare@npm:1.2.5"
@@ -19531,7 +19535,6 @@ __metadata:
     "@lit-protocol/encryption": "npm:^7.1.1"
     "@lit-protocol/lit-node-client": "npm:^7.1.1"
     "@neondatabase/serverless": "npm:^1.0.0"
-    "@permissionless/wagmi": "npm:^0.1.4"
     "@privy-io/react-auth": "npm:^2.13.1"
     "@privy-io/server-auth": "npm:^1.22.0"
     "@privy-io/wagmi": "npm:^1.0.3"
@@ -19561,6 +19564,7 @@ __metadata:
     minidenticons: "npm:^4.2.1"
     next: "npm:15.3.2"
     nextjs-toploader: "npm:^3.8.16"
+    permissionless: "npm:^0.2.47"
     pg: "npm:^8.15.6"
     postgres: "npm:^3.4.5"
     react: "npm:^19.0.0"

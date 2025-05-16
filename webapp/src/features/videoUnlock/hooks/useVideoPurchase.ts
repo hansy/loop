@@ -1,9 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { usePublicClient, useWalletClient } from "wagmi";
-import {
-  useSendTransaction,
-  useWaitForTransactionReceipt,
-} from "@permissionless/wagmi";
 import { encodeFunctionData } from "viem";
 import type { VideoMetadata } from "@/types/video";
 import type {
@@ -14,6 +10,7 @@ import type {
 import { signPermit, generateNonce } from "../utils/erc20";
 import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 import { PurchaseManagerABI } from "@/abis/purchaseManager";
+import { getSmartAccountClient } from "../utils/paymaster";
 
 interface UseVideoPurchaseProps {
   selectedOption: UnlockOption | null;
@@ -21,11 +18,6 @@ interface UseVideoPurchaseProps {
   hasEmbeddedWallet: boolean | undefined;
   handlers: UnlockHandlers;
   onProcessingChange: (isProcessing: boolean) => void;
-}
-
-interface TransactionArgs {
-  to: `0x${string}`;
-  data: `0x${string}`;
 }
 
 export const useVideoPurchase = ({
@@ -37,94 +29,16 @@ export const useVideoPurchase = ({
 }: UseVideoPurchaseProps) => {
   const [purchaseStatus, setPurchaseStatus] =
     useState<PurchaseStatusType>("idle");
-  const [transactionArgs, setTransactionArgs] =
-    useState<TransactionArgs | null>(null);
 
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const {
-    sendTransaction,
-    data: transactionReference, // This will be the transaction hash upon submission
-    isPending: isSendingTransaction, // True while the transaction is being sent to the wallet/node
-    isError: isSendTransactionError,
-    error: sendTransactionError,
-  } = useSendTransaction();
-
-  const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    isError: isConfirmingError,
-    error: confirmingError,
-  } = useWaitForTransactionReceipt({
-    id: transactionReference,
-    // pollingInterval: 1_000, // Optional: customize polling interval
-  });
-
-  // Effect to call sendTransaction when transactionArgs are set
-  useEffect(() => {
-    if (transactionArgs && !isSendingTransaction) {
-      sendTransaction(transactionArgs);
-      // Reset args so this doesn't re-trigger unless explicitly set again
-      setTransactionArgs(null);
-    }
-  }, [transactionArgs, sendTransaction, isSendingTransaction]);
-
-  // Effect to handle the outcome of sendTransaction (submission to mempool)
-  useEffect(() => {
-    if (isSendingTransaction) {
-      onProcessingChange(true); // Keep overall processing true
-      setPurchaseStatus("purchasing"); // Or a more specific "submitting" status
-    } else if (transactionReference) {
-      setPurchaseStatus("purchasing"); // Now waiting for confirmation
-      // onProcessingChange(true) still, as we are waiting for receipt
-    } else if (isSendTransactionError && selectedOption) {
-      console.error("Send transaction error:", sendTransactionError);
-      setPurchaseStatus("error");
-      handlers.onUnlockError(selectedOption, sendTransactionError as Error);
-      onProcessingChange(false);
-    }
-    // Do not set onProcessingChange(false) here yet if hash is received, wait for confirmation
-  }, [
-    isSendingTransaction,
-    transactionReference,
-    isSendTransactionError,
-    sendTransactionError,
-    handlers,
-    selectedOption,
-    onProcessingChange,
-  ]);
-
-  // Effect to handle transaction confirmation (mining)
-  useEffect(() => {
-    if (isConfirming) {
-      onProcessingChange(true); // Still processing
-      setPurchaseStatus("purchasing"); // Technically, "confirming"
-    } else if (isConfirmed && selectedOption) {
-      setPurchaseStatus("success");
-      console.log("purchase success");
-      handlers.onUnlockSuccess(selectedOption);
-      onProcessingChange(false);
-    } else if (isConfirmingError && selectedOption) {
-      console.error("Transaction confirmation error:", confirmingError);
-      setPurchaseStatus("error");
-      handlers.onUnlockError(selectedOption, confirmingError as Error);
-      onProcessingChange(false);
-    }
-  }, [
-    isConfirming,
-    isConfirmed,
-    isConfirmingError,
-    confirmingError,
-    handlers,
-    selectedOption,
-    onProcessingChange,
-  ]);
 
   const initiatePurchase = useCallback(async () => {
     if (!selectedOption || !walletClient || !publicClient || !metadata) {
       console.error("Missing required dependencies for initiating purchase");
       return;
     }
+
     if (selectedOption.type !== "payment" || !selectedOption.price) {
       console.error(
         "Selected option is not a payment option or price is missing."
@@ -148,13 +62,17 @@ export const useVideoPurchase = ({
         return;
       }
 
+      // const pc = createPublicClient({
+      //   chain: DEFAULT_CHAIN,
+      //   transport: http(transport("client", DEFAULT_CHAIN.name)),
+      // });
+
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 5);
       const nonce = await generateNonce(
         publicClient,
         walletClient.account.address
       );
 
-      console.log("walletClient address", walletClient.account.address);
       const signature = await signPermit(
         walletClient,
         selectedOption.price,
@@ -163,7 +81,6 @@ export const useVideoPurchase = ({
         nonce
       );
 
-      console.log("signature", signature);
       const callData = encodeFunctionData({
         abi: PurchaseManagerABI,
         functionName: "purchaseVideoWithPermit",
@@ -177,15 +94,29 @@ export const useVideoPurchase = ({
         ],
       });
 
-      // Set args to trigger the useEffect for sendTransaction
-      setTransactionArgs({
+      const sc = await getSmartAccountClient(publicClient, walletClient);
+
+      const tx = await sc.sendTransaction({
         to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
         data: callData,
       });
+
+      // const tx = await walletClient.sendTransaction({
+      //   to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
+      //   data: callData,
+      // });
+
+      console.log("tx", tx);
+
+      // Set args to trigger the useEffect for sendTransaction
+      // setTransactionArgs({
+      //   to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
+      //   data: callData,
+      // });
       // The purchaseStatus will be updated by the useEffect hooks watching sendTransaction and useWaitForTransactionReceipt
     } catch (error) {
       // This catch block handles errors from synchronous parts or from nonce/permit generation
-      console.error("Error during purchase initiation (permit/nonce):");
+      console.error("Error during purchase initiation (permit/nonce):", error);
       setPurchaseStatus("error");
       if (selectedOption) {
         // Ensure selectedOption is available
@@ -208,7 +139,6 @@ export const useVideoPurchase = ({
 
   const resetPurchaseState = useCallback(() => {
     setPurchaseStatus("idle");
-    setTransactionArgs(null);
     onProcessingChange(false); // Ensure processing is reset
   }, [onProcessingChange]);
 
@@ -216,7 +146,5 @@ export const useVideoPurchase = ({
     purchaseStatus,
     initiatePurchase,
     resetPurchaseState,
-    isSendingTransaction,
-    isConfirming,
   };
 };
