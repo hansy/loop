@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -78,7 +80,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	var req model.RequestBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		HandleErr(w, "Failed to read request body", err, http.StatusBadRequest)
+		HandleErr(w, http.StatusBadRequest, "Failed to read request body", err, "BAD_REQUEST", nil)
 		return
 	}
 
@@ -98,14 +100,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Initialize Redis client
 	rdb, err := redis.NewClient()
 	if err != nil {
-		HandleErr(w, "Failed to initialize Redis client", err, http.StatusInternalServerError)
+		HandleErr(w, http.StatusInternalServerError, "Failed to initialize Redis client", err, "INTERNAL_ERROR", nil)
 		return
 	}
 
 	// Initialize database client
 	dbClient, err := db.NewClient()
 	if err != nil {
-		HandleErr(w, "Failed to initialize database client", err, http.StatusInternalServerError)
+		HandleErr(w, http.StatusInternalServerError, "Failed to initialize database client", err, "INTERNAL_ERROR", nil)
 		return
 	}
 	defer dbClient.Close()
@@ -114,7 +116,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if req.TokenId != "" {
 		videoStore, err := GetVideoMetadata(rdb, dbClient, req.TokenId)
 		if err != nil {
-			HandleErr(w, "Error fetching video metadata", err, http.StatusInternalServerError)
+			HandleErr(w, http.StatusInternalServerError, "Error fetching video metadata", err, "INTERNAL_ERROR", nil)
 			return
 		}
 
@@ -130,7 +132,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	// Verify signature
 	if !auth.VerifySignature(signedMessage, sig, authSigAddress) {
-		HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+		HandleErr(w, http.StatusUnauthorized, "Unauthorized", nil, "UNAUTHORIZED", nil)
 		return
 	}
 
@@ -140,7 +142,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	switch derivedVia {
 	case "lit.action":
 		if err := handleLitAction(r.Context(), rdb, signedMessage, tokenId, authSigAddress); err != nil {
-			HandleErr(w, err.Error(), nil, http.StatusUnauthorized)
+			HandleErr(w, http.StatusUnauthorized, err.Error(), err, "UNAUTHORIZED_LIT_ACTION", nil)
 			return
 		}
 		isAuthorized = true
@@ -151,9 +153,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		val, err := rdb.GetAccess(accessKey)
 		if err != nil {
 			if err == redisgo.Nil {
-				HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+				HandleErr(w, http.StatusUnauthorized, "Unauthorized", nil, "UNAUTHORIZED", nil)
 			} else {
-				HandleErr(w, "Error checking access", err, http.StatusInternalServerError)
+				HandleErr(w, http.StatusInternalServerError, "Error checking access", err, "INTERNAL_ERROR_REDIS", nil)
 			}
 			return
 		}
@@ -161,7 +163,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		isAuthorized = true
 
 	default:
-		HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+		HandleErr(w, http.StatusUnauthorized, "Unauthorized", nil, "UNAUTHORIZED", nil)
 		return
 	}
 
@@ -170,15 +172,37 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	HandleErr(w, "Unauthorized", nil, http.StatusUnauthorized)
+	HandleErr(w, http.StatusUnauthorized, "Unauthorized", nil, "UNAUTHORIZED", nil)
 }
 
-// HandleErr sends an error response to the client
-func HandleErr(w http.ResponseWriter, msg string, err error, status int) {
-	log.Printf("Error: %s: %v", msg, err)
+// HandleErr sends a standardized error response to the client.
+// It logs the original error for internal diagnostics and constructs a JSON response
+// conforming to the StandardizedErrorResponse structure.
+func HandleErr(w http.ResponseWriter, httpStatusCode int, publicErrMsg string, internalErr error, errCode string, errDetails interface{}) {
+	log.Printf("Error: %s: %v", publicErrMsg, internalErr)
+
+	detail := model.StandardizedErrorDetail{
+		Message: publicErrMsg,
+		Code:    errCode,
+		Details: errDetails,
+	}
+
+	if os.Getenv("APP_ENV") != "production" && internalErr != nil {
+		detail.Stack = string(debug.Stack())
+	}
+
+	response := model.StandardizedErrorResponse{
+		Success: false,
+		Error:   detail,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(model.ErrorResponse{Msg: msg})
+	w.WriteHeader(httpStatusCode)
+	if encodeErr := json.NewEncoder(w).Encode(response); encodeErr != nil {
+		// Fallback if JSON encoding fails
+		log.Printf("Critical: Failed to encode error response: %v", encodeErr)
+		http.Error(w, "{\"success\":false,\"error\":{\"message\":\"Error encoding response\"}}", http.StatusInternalServerError)
+	}
 }
 
 // handleLitAction processes authentication via lit.action
@@ -230,7 +254,7 @@ func CreateAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
 
 	url, err := storj.CreatePublicSharedLink(ctx, accessGrant, bucket, objectPath)
 	if err != nil {
-		HandleErr(w, "Failed to create public shared link", err, http.StatusInternalServerError)
+		HandleErr(w, http.StatusInternalServerError, "Failed to create public shared link", err, "INTERNAL_ERROR", nil)
 		return
 	}
 

@@ -72,7 +72,18 @@ type VideoStore struct {
 	PlaybackAccess *VideoAccess `json:"playbackAccess,omitempty"`
 }
 
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Msg string `json:"msg"`
+// StandardizedErrorDetail represents the detailed error information.
+// It includes a user-friendly message, an optional error code for programmatic handling,
+// optional additional details, and a stack trace for debugging in non-production environments.
+type StandardizedErrorDetail struct {
+	Message string      `json:"message"`
+	Code    string      `json:"code,omitempty"`
+	Stack   string      `json:"stack,omitempty"`
+}
+
+// StandardizedErrorResponse is the structure for all API error responses.
+// It clearly indicates failure and wraps the error details.
+type StandardizedErrorResponse struct {
+	Success bool                    `json:"success"` // Always false for errors
+	Error   StandardizedErrorDetail `json:"error"`
 }
