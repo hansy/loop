@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import VideoPlayer from "./VideoPlayer";
-import VideoUnlockModal from "./VideoUnlockModal";
+import { VideoUnlockModal } from "@/features/videoUnlock";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { IPFS_GATEWAY } from "@/config/ipfsConfig";
@@ -15,8 +15,6 @@ import type { MediaSrc } from "@vidstack/react";
 import { authSigfromSessionSigs } from "@/utils/auth";
 import { getPlaybackUrl } from "@/services/client/playbackApi";
 import { PlaybackAccessRequest } from "@/services/client/playbackApi";
-import { defaultAccessControlTemplate } from "@/features/accessControl/defaultTemplate";
-
 /**
  * Interface defining the props for the VideoContent component.
  * @interface VideoContentProps
@@ -39,6 +37,10 @@ export function VideoContent({ video }: VideoContentProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const { sessionSigs } = useAuth();
+
+  const handleUnlock = async (type: "token" | "payment") => {
+    console.log("Unlocking video with type:", type);
+  };
 
   const fetchVideoUrl = useCallback(
     async (tokenId: string, sessionSigs?: SessionSigsMap) => {
@@ -93,7 +95,7 @@ export function VideoContent({ video }: VideoContentProps) {
         poster={metadata.coverImage}
         title={metadata.title}
         isLoading={isLoading}
-        isAuthenticated={true}
+        isAuthenticated={!!sessionSigs}
         isLocked={isLocked}
         onPlay={() => {
           // TODO: Implement analytics or other play tracking
@@ -160,8 +162,7 @@ export function VideoContent({ video }: VideoContentProps) {
         isOpen={isUnlockModalOpen}
         onClose={() => setIsUnlockModalOpen(false)}
         metadata={metadata}
-        accessControl={defaultAccessControlTemplate}
-        onUnlock={() => {}}
+        onUnlock={handleUnlock}
       />
     </div>
   );

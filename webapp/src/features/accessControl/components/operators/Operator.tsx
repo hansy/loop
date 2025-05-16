@@ -19,6 +19,7 @@ export function Operator({ operator, onChange }: OperatorProps) {
   return (
     <div className="flex items-center justify-center space-x-2">
       <button
+        type="button"
         onClick={() => handleUpdate("and")}
         className={`rounded-md px-3 py-2 text-sm font-semibold ${
           operator === "and"
@@ -29,6 +30,7 @@ export function Operator({ operator, onChange }: OperatorProps) {
         AND
       </button>
       <button
+        type="button"
         onClick={() => handleUpdate("or")}
         className={`rounded-md px-3 py-2 text-sm font-semibold ${
           operator === "or"

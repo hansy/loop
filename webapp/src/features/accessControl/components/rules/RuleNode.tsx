@@ -144,6 +144,7 @@ export function RuleNode({ rule, onUpdate, onRemove }: RuleNodeProps) {
       </div>
       <div className="flex items-center border-l border-gray-200 bg-gray-100">
         <button
+          type="button"
           onClick={handleRemove}
           className="flex h-full w-full items-center justify-center rounded-r-lg text-gray-400 hover:bg-gray-200 hover:text-gray-500 px-4"
           aria-label="Remove rule"

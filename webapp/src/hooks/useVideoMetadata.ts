@@ -85,7 +85,7 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
     // }
 
     return {
-      acl: litConditions as unknown as Record<string, unknown>,
+      acl: litConditions as unknown as Record<string, unknown>[],
       type: "lit" as const,
     };
   }, [accessControlState]);

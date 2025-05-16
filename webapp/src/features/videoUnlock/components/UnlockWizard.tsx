@@ -1,33 +1,10 @@
-import { useState } from "react";
+import { useReducer } from "react";
 import { LockClosedIcon } from "@heroicons/react/24/outline";
-import { VideoMetadata } from "@/types";
-import type {
-  AccessControlState,
-  GroupNode,
-} from "@/features/accessControl/types";
 import { truncateString } from "@/utils/truncateString";
 import { formatMoney, USDCWeiToUSD } from "@/utils/currency";
-
-interface UnlockWizardProps {
-  metadata: VideoMetadata;
-  accessControl: AccessControlState;
-  onUnlock: (type: "token" | "payment") => Promise<void>;
-  onStepChange: (step: "options" | "unlock") => void;
-  currentStep: "options" | "unlock";
-}
-
-interface UnlockOption {
-  id: string;
-  type: "token" | "payment";
-  title: string;
-  description: string;
-  price?: bigint;
-  contractAddress?: string;
-  tokenDetails?: {
-    type: string;
-    amount?: number;
-  };
-}
+import type { UnlockWizardProps, UnlockOption } from "../types";
+import { unlockReducer, extractUnlockOptions, initialState } from "../reducer";
+import { deriveAccessControl } from "../utils/accessControl";
 
 /**
  * UnlockWizard is a component that handles the multi-step unlock flow for videos.
@@ -37,68 +14,32 @@ interface UnlockOption {
  * @example
  * ```tsx
  * <UnlockWizard
- *   video={videoMetadata}
- *   accessControl={accessControlState}
+ *   metadata={videoMetadata}
  *   onUnlock={handleUnlock}
  *   onStepChange={handleStepChange}
+ *   currentStep={currentStep}
  * />
  * ```
  */
 export default function UnlockWizard({
   metadata,
-  accessControl,
   onUnlock,
   onStepChange,
   currentStep,
 }: UnlockWizardProps) {
-  const [selectedOption, setSelectedOption] = useState<UnlockOption | null>(
-    null
-  );
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [state, dispatch] = useReducer(unlockReducer, initialState);
+  const { selectedOption, isProcessing } = state;
 
   // Extract unlock options from access control and video metadata
-  const unlockOptions: UnlockOption[] = [
-    // Add token-based options from access control
-    ...(accessControl
-      .find(
-        (node): node is GroupNode =>
-          node.type === "group" && node.id === "inner-group"
-      )
-      ?.rules.find(
-        (rule): rule is GroupNode =>
-          rule.type === "group" && rule.id === "user-group"
-      )
-      ?.rules.filter((group): group is GroupNode => group.type === "group")
-      .map((group) => {
-        const tokenRule = group.rules.find((rule) => rule.type === "token");
-        return {
-          id: group.id,
-          type: "token" as const,
-          title: "Token Access",
-          description: `Access with ${tokenRule?.subtype || "token"}`,
-          contractAddress: tokenRule?.contract,
-          tokenDetails: {
-            type: tokenRule?.subtype || "token",
-            amount: tokenRule?.numTokens,
-          },
-        };
-      }) || []),
-  ];
+  const accessControl = deriveAccessControl(metadata);
+  const unlockOptions = extractUnlockOptions(accessControl, metadata);
 
-  if (BigInt(metadata.price.amount) > 0n) {
-    unlockOptions.push({
-      id: "payment",
-      type: "payment" as const,
-      title: "Purchase Video",
-      description: `Buy this video for ${formatMoney(
-        USDCWeiToUSD(BigInt(metadata.price.amount))
-      )} USDC`,
-      price: BigInt(metadata.price.amount),
-    });
-  }
+  console.log("metadata", metadata);
+  console.log("accessControl", accessControl);
+  console.log("unlockOptions", unlockOptions);
 
   const handleOptionSelect = (option: UnlockOption) => {
-    setSelectedOption(option);
+    dispatch({ type: "SELECT_OPTION", payload: option });
     onStepChange("unlock");
   };
 
@@ -106,12 +47,12 @@ export default function UnlockWizard({
     if (!selectedOption) return;
 
     try {
-      setIsProcessing(true);
+      dispatch({ type: "SET_PROCESSING", payload: true });
       await onUnlock(selectedOption.type);
     } catch (error) {
       console.error("Unlock failed:", error);
     } finally {
-      setIsProcessing(false);
+      dispatch({ type: "SET_PROCESSING", payload: false });
     }
   };
 
@@ -132,6 +73,7 @@ export default function UnlockWizard({
       <div className="space-y-4">
         {unlockOptions.map((option) => (
           <button
+            type="button"
             key={option.id}
             onClick={() => handleOptionSelect(option)}
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"

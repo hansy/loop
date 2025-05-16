@@ -138,6 +138,7 @@ export function RuleSummary({
           className={`flex items-center border-l ${getRemoveSectionColor()} rounded-r-lg`}
         >
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onRemove();

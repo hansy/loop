@@ -69,6 +69,7 @@ export default function UploadForm() {
     setIsSubmitting(true);
 
     try {
+      console.log("validating");
       const data = await validateAndFormatMetadata();
 
       await uploadVideo(data);

@@ -31,7 +31,7 @@ const VideoPriceSchema = z.object({
  * Schema for validating video access control.
  */
 const VideoAccessSchema = z.object({
-  acl: z.record(z.unknown()),
+  acl: z.array(z.unknown()),
   type: z.literal("lit"),
   ciphertext: z.string().optional(),
   dataToEncryptHash: z.string().optional(),
