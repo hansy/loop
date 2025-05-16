@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Minimal global styles for embedded content */
+body {
+  margin: 0;
+  padding: 0;
+  /* Add any other absolutely essential base styles for embeds here */
+}

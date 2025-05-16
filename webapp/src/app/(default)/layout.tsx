@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import type { Metadata } from "next";
-import "./globals.css";
+import "./globals.css"; // This will point to (default)/globals.css
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
