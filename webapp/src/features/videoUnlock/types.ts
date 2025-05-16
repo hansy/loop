@@ -22,7 +22,7 @@ export type PurchaseStatus =
 
 export interface UnlockHandlers {
   onUnlockSuccess: (option: UnlockOption) => void;
-  onUnlockError: (option: UnlockOption, error: Error) => void;
+  onUnlockError: (error: string) => void;
 }
 
 export interface UnlockWizardProps {

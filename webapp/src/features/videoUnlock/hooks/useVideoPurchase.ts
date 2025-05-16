@@ -35,7 +35,6 @@ export const useVideoPurchase = ({
 
   const initiatePurchase = useCallback(async () => {
     if (!selectedOption || !walletClient || !publicClient || !metadata) {
-      console.error("Missing required dependencies for initiating purchase");
       return;
     }
 
@@ -43,17 +42,19 @@ export const useVideoPurchase = ({
       console.error(
         "Selected option is not a payment option or price is missing."
       );
+      setPurchaseStatus("error");
+      handlers.onUnlockError("Invalid option type or price");
+      onProcessingChange(false);
       return;
     }
 
-    // Reset previous transaction states
-    setPurchaseStatus("validating"); // Initial status before any async ops
-    onProcessingChange(true); // Start processing early for user feedback
+    setPurchaseStatus("validating");
+    onProcessingChange(true);
 
     try {
       const confirmMessage = hasEmbeddedWallet
         ? "Are you sure you want to purchase this video?"
-        : "Are you sure you want to purchase this video? You will be prompted to sign three transactions (signature, permit, purchase) to complete the order.";
+        : "Are you sure you want to purchase this video? You will be prompted to sign the permit and the purchase transaction.";
 
       const confirmed = window.confirm(confirmMessage);
       if (!confirmed) {
@@ -62,10 +63,7 @@ export const useVideoPurchase = ({
         return;
       }
 
-      // const pc = createPublicClient({
-      //   chain: DEFAULT_CHAIN,
-      //   transport: http(transport("client", DEFAULT_CHAIN.name)),
-      // });
+      setPurchaseStatus("purchasing");
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 5);
       const nonce = await generateNonce(
@@ -94,38 +92,39 @@ export const useVideoPurchase = ({
         ],
       });
 
-      const sc = await getSmartAccountClient(publicClient, walletClient);
+      const smartAccountClient = await getSmartAccountClient(
+        publicClient,
+        walletClient
+      );
 
-      const tx = await sc.sendTransaction({
+      console.log("Sending transaction with Smart Account Client...");
+      const hash = await smartAccountClient.sendTransaction({
         to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
         data: callData,
       });
+      console.log("Transaction sent, hash:", hash);
 
-      // const tx = await walletClient.sendTransaction({
-      //   to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
-      //   data: callData,
-      // });
+      console.log("Waiting for transaction receipt...");
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash,
+      });
+      console.log("Transaction receipt received:", receipt);
 
-      console.log("tx", tx);
-
-      // Set args to trigger the useEffect for sendTransaction
-      // setTransactionArgs({
-      //   to: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
-      //   data: callData,
-      // });
-      // The purchaseStatus will be updated by the useEffect hooks watching sendTransaction and useWaitForTransactionReceipt
-    } catch (error) {
-      // This catch block handles errors from synchronous parts or from nonce/permit generation
-      console.error("Error during purchase initiation (permit/nonce):", error);
-      setPurchaseStatus("error");
-      if (selectedOption) {
-        // Ensure selectedOption is available
-        handlers.onUnlockError(selectedOption, error as Error);
+      if (receipt.status === "success") {
+        setPurchaseStatus("success");
+        handlers.onUnlockSuccess(selectedOption);
+      } else {
+        console.error("Transaction reverted:", receipt);
+        setPurchaseStatus("error");
+        handlers.onUnlockError("Transaction failed or reverted");
       }
+    } catch (error) {
+      console.error("Error during purchase initiation or execution:", error);
+      setPurchaseStatus("error");
+      handlers.onUnlockError("Unknown error");
+    } finally {
       onProcessingChange(false);
     }
-    // Note: onProcessingChange(false) is handled by useEffects or the catch block above
-    // to ensure it's only set when the entire flow (including async parts) is truly done or failed.
   }, [
     selectedOption,
     walletClient,
@@ -133,13 +132,12 @@ export const useVideoPurchase = ({
     metadata,
     hasEmbeddedWallet,
     handlers,
-    onProcessingChange, // Removed sendTransaction from here as it's called in useEffect
-    // Keep other dependencies that influence the logic before setting transactionArgs
+    onProcessingChange,
   ]);
 
   const resetPurchaseState = useCallback(() => {
     setPurchaseStatus("idle");
-    onProcessingChange(false); // Ensure processing is reset
+    onProcessingChange(false);
   }, [onProcessingChange]);
 
   return {

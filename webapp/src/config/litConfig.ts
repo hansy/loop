@@ -5,7 +5,7 @@ import { LIT_NETWORK } from "@lit-protocol/constants";
  * Lit Protocol configuration constants
  */
 export const LIT_ACTION_IPFS_CID = IS_PRODUCTION
-  ? "QmUZfKDuZbzf3jotSKsxsyTxpPqibuUh5R82VzviS16Qmm"
+  ? "QmZ6gqoUscwGXm9rKbqwFSbECJtMMrsebbCDpkFGgvUScQ"
   : "QmUZfKDuZbzf3jotSKsxsyTxpPqibuUh5R82VzviS16Qmm";
 
 export const ACC_TOKEN_PLACEHOLDER = "TOKEN_PLACEHOLDER";

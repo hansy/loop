@@ -12,7 +12,6 @@ import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SessionSigsMap, AuthSig } from "@lit-protocol/types";
 import type { MediaSrc } from "@vidstack/react";
-import { authSigfromSessionSigs } from "@/utils/auth";
 import { getPlaybackUrl } from "@/services/client/playbackApi";
 import { PlaybackAccessRequest } from "@/services/client/playbackApi";
 import { usePrivy } from "@privy-io/react-auth";
@@ -38,15 +37,15 @@ interface VideoContentProps {
 export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
   const [src, setSrc] = useState<MediaSrc | undefined>(undefined);
-  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(true);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const [litAuthSig, setLitAuthSig] = useState<AuthSig | undefined>(undefined);
-  const { sessionSigs } = useAuth();
+  const { sessionSigs, isAuthenticating } = useAuth();
   const { user } = usePrivy();
 
-  const handleUnlockError = () => {
-    console.error("Unlock failed:");
+  const handleUnlockError = (error: string) => {
+    console.error("Unlock failed:", error);
   };
 
   const fetchVideoUrl = useCallback(
@@ -84,6 +83,8 @@ export function VideoContent({ video }: VideoContentProps) {
         return;
       }
 
+      setIsLoading(true);
+
       try {
         const litClient = new LitService();
         const authSig = await litClient.runLitAction(ss, {
@@ -102,6 +103,8 @@ export function VideoContent({ video }: VideoContentProps) {
         console.error("Error fetching Lit auth sig:", error);
 
         setLitAuthSig(undefined);
+      } finally {
+        setIsLoading(false);
       }
     },
     [metadata.playbackAccess]
@@ -138,7 +141,7 @@ export function VideoContent({ video }: VideoContentProps) {
         src={src}
         poster={metadata.coverImage}
         title={metadata.title}
-        isLoading={isLoading}
+        isLoading={isLoading || isAuthenticating}
         isAuthenticated={!!sessionSigs}
         isLocked={isLocked}
         onPlay={() => {
