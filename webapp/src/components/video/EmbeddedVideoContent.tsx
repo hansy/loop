@@ -8,15 +8,32 @@ import type { SessionSigsMap } from "@lit-protocol/types";
 // Basic definition for MediaSrc, adjust if a more specific type exists
 type MediaSrc = string | undefined;
 
+// Message types expected from Auth Page
+interface AuthPageReadyMessage {
+  type: "AUTH_PAGE_READY";
+  videoId?: string;
+}
+
+interface AuthResultMessagePayload {
+  success: boolean;
+  videoId?: string;
+  sessionSigs?: SessionSigsMap;
+}
+interface AuthResultMessage {
+  type: "AUTH_RESULT";
+  payload: AuthResultMessagePayload;
+}
+
+type MessageFromAuthPage = AuthPageReadyMessage | AuthResultMessage;
+
 interface Props {
   metadata: VideoMetadata;
 }
 
 export default function EmbeddedVideoContent({ metadata }: Props) {
-  const [src, setSrc] = useState<MediaSrc>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_src, _setSrc] = useState<MediaSrc>(undefined); // TODO: Implement video source loading logic using _setSrc to display the video upon successful auth.
+  const [isLoading, setIsLoading] = useState(false); // TODO: Manage loading state (e.g., when fetching video data or during auth) using _setIsLoading.
   const [isLocked, setIsLocked] = useState(true);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [sessionSigs, setSessionSigs] = useState<SessionSigsMap | undefined>(
     undefined
   );
@@ -25,32 +42,25 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
 
   useEffect(() => {
     const handleAuthMessage = (event: MessageEvent) => {
-      if (
-        authWindowRef.current &&
-        event.source !== authWindowRef.current &&
-        event.source !== null
-      ) {
-        console.warn("Message received from unexpected source.", event.source);
-        return;
-      }
-      if (event.source === null && authWindowRef.current?.closed) {
-        console.log("Auth window was closed, ignoring message.");
+      // Ensure message is from the auth window we opened
+      if (event.source !== authWindowRef.current) {
+        // Optionally log ignored messages from other sources for debugging, then return
+        // console.log("EmbeddedVideoContent: Ignoring message not from auth window", event.origin, event.data);
         return;
       }
 
-      const expectedAuthOrigin = new URL("/videos/", window.location.origin)
-        .origin; // Base path for auth page
-      // More robust check: allow any path under /videos/ for the auth page origin
-      if (!event.origin.startsWith(expectedAuthOrigin)) {
-        console.warn(
-          `Message from unexpected origin: ${event.origin}. Expected to start with ${expectedAuthOrigin}`
-        );
-        return;
-      }
+      // We've confirmed the source is our authWindow, so we expect its origin
+      // to be the same as the page we loaded into it.
+      // No need for an explicit origin check here if event.source is strictly checked,
+      // but if an origin check was desired, it would be against the authPageUrl's origin.
 
-      console.log("Player received message from auth page:", event.data);
-      const messageData = event.data as { type?: string; payload?: any };
-      if (messageData?.type === "AUTH_PAGE_READY") {
+      console.log(
+        "Player received message from auth page (source confirmed):",
+        event.data
+      );
+      const message = event.data as MessageFromAuthPage; // Assumes MessageFromAuthPage is defined (AUTH_PAGE_READY | AUTH_RESULT)
+
+      if (message?.type === "AUTH_PAGE_READY") {
         if (!initialRequestSentRef.current) {
           console.log(
             "Auth page is ready. Player sending initial REQUEST_AUTHENTICATION."
@@ -68,18 +78,20 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
             "Auth page ready signal received again, but initial request already sent."
           );
         }
-      } else if (messageData?.type === "AUTH_RESULT") {
-        console.log("Received AUTH_RESULT:", messageData.payload);
-        if (messageData.payload?.success && messageData.payload?.sessionSigs) {
-          setSessionSigs(messageData.payload.sessionSigs);
-          setIsLocked(false);
+      } else if (message?.type === "AUTH_RESULT") {
+        console.log("Received AUTH_RESULT:", message.payload);
+        if (message.payload?.success && message.payload?.sessionSigs) {
+          setSessionSigs(message.payload.sessionSigs);
+          // TODO: Potentially call _setSrc here with the actual video URL
+          // TODO: Potentially set _setIsLoading(false) if a loading process was started
         } else {
           console.warn("Authentication failed or no sessionSigs received.");
+          // TODO: Potentially set _setIsLoading(false) if a loading process was started
         }
-        setIsAuthenticating(false);
-        if (authWindowRef.current && !authWindowRef.current.closed) {
-          authWindowRef.current.close();
-        }
+        setIsLoading(false);
+        // if (authWindowRef.current && !authWindowRef.current.closed) {
+        //   authWindowRef.current.close(); // Temporarily commented out for debugging
+        // }
         initialRequestSentRef.current = false; // Reset for potential future auth attempts
       }
     };
@@ -96,7 +108,8 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
 
   const handleAuthenticate = () => {
     console.log("Authenticate clicked in EmbeddedVideoContent");
-    setIsAuthenticating(true);
+    setIsLoading(true);
+    // TODO: Potentially set _setIsLoading(true) here
     initialRequestSentRef.current = false; // Reset flag each time auth is initiated
 
     const playerDomain = window.location.origin;
@@ -123,10 +136,10 @@ export default function EmbeddedVideoContent({ metadata }: Props) {
   return (
     <>
       <VideoPlayer
-        src={src}
+        src={_src}
         poster={metadata.coverImage}
         title={metadata.title}
-        isLoading={isLoading || isAuthenticating}
+        isLoading={isLoading}
         isAuthenticated={!!sessionSigs}
         isLocked={isLocked}
         onPlay={() => {

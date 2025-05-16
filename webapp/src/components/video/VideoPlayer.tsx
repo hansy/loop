@@ -89,6 +89,9 @@ export default function VideoPlayer({
   onAuthenticate,
   onUnlockClick,
 }: VideoPlayerProps) {
+  console.log("VideoPlayer isLocked:", isLocked);
+  console.log("VideoPlayer isAuthenticated:", isAuthenticated);
+  console.log("VideoPlayer isLoading:", isLoading);
   return (
     <MediaPlayer
       className="w-full aspect-video bg-black"

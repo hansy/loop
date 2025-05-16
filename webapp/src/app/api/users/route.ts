@@ -24,7 +24,7 @@ export const POST = handleApiRoute(async (_req, privyUser) => {
     privyUser.linkedAccounts as LinkedAccountWithMetadata[]
   );
 
-  if (privyUser.customMetadata.appUserId) {
+  if (privyUser.customMetadata?.appUserId) {
     return successResponse(
       { newUser: false, walletAddress: wallet.address },
       200

@@ -26,6 +26,14 @@ export default function PrivyClientProvider({
 }: PrivyClientProviderProps) {
   const { activeChain, supportedChains } = activeChainConfig;
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID!;
+  const walletConnectProjectId =
+    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+
+  if (!privyAppId) {
+    throw new Error(
+      "NEXT_PUBLIC_PRIVY_APP_ID is not set in environment variables."
+    );
+  }
 
   return (
     <PrivyProvider
@@ -42,6 +50,9 @@ export default function PrivyClientProvider({
           createOnLogin: "users-without-wallets",
           showWalletUIs: false,
         },
+        ...(walletConnectProjectId && {
+          walletConnectCloudProjectId: walletConnectProjectId,
+        }),
       }}
     >
       <QueryClientProvider client={queryClient}>
