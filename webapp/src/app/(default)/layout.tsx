@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Loop",
-  description: "Video sharing platform",
+  description: "A video player with a paywall",
 };
 
 export default function RootLayout({
