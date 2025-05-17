@@ -71,7 +71,7 @@ export default function VideoPlayerOverlay({
         {isLoading ? (
           <LoadingSpinner className="h-12 w-12 border-b-2 border-gray-100" />
         ) : (
-          <div className="flex flex-col items-center text-center mr-70">
+          <div className="flex flex-col items-center text-center">
             <LockClosedIcon className="h-20 w-20 text-gray-400" />
             <div className="text-gray-100 text-xl font-medium">
               Video is locked
