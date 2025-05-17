@@ -51,7 +51,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
   const { setActiveWallet } = useSetActiveWallet();
   const { wallets, ready: walletsReady } = useWallets();
   const { signMessageAsync } = useSignMessage();
-  const litService = useMemo(() => new LitService(), []);
 
   const { login } = useLogin({
     onComplete: async () => {
@@ -74,7 +73,6 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         setIsBackendRegistered(false);
         setSessionSigs(null);
 
-        await litService.disconnect();
         await privyLogout();
 
         updateToast(toastId, "Successfully logged out!", "success");
@@ -85,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
         updateToast(toastId, "Failed to log out. Please try again.", "error");
       }
     }
-  }, [privyLogout, router, litService]);
+  }, [privyLogout, router]);
 
   const isAuthenticated = useMemo(
     () => ready && authenticated && isBackendRegistered && sessionSigs !== null,
@@ -161,6 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       const delegatedAuthSig = await fetchDelegatedAuthSig(walletAddress);
 
       // Generate session sigs using the delegated auth sig
+      const litService = new LitService();
       const sigs = await litService.generateSessionSigs(
         walletAddress,
         signMessageAsync,
