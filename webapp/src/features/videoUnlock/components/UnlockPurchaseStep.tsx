@@ -3,7 +3,10 @@ import type {
   UnlockOption,
   PurchaseStatus as PurchaseStatusType,
 } from "../types";
-import PurchaseStatusDisplay from "./PurchaseStatus"; // Renamed to avoid conflict
+import PurchaseStatusDisplay from "./PurchaseStatus";
+import UserBalanceDisplay from "./UserBalanceDisplay";
+import { useAccount, useBalance } from "wagmi";
+import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 
 interface UnlockPurchaseStepProps {
   selectedOption: UnlockOption;
@@ -18,7 +21,17 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
   isProcessing,
   onInitiatePurchase,
 }) => {
+  const { address: userAddress, isConnected } = useAccount();
+
+  const { data: balanceData, isLoading: isBalanceQueryLoading } = useBalance({
+    address: userAddress,
+    token: CONTRACT_ADDRESSES.USDC,
+  });
+
   if (selectedOption.type !== "payment" || !selectedOption.price) return null;
+
+  const videoPriceWei = selectedOption.price;
+  const userUSDCBalanceWei = balanceData?.value ?? null;
 
   const getStatusSteps = () => {
     const steps = [
@@ -48,6 +61,18 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
     return steps;
   };
 
+  const isBalanceLoading = isBalanceQueryLoading || !isConnected;
+  const hasSufficientBalance =
+    !isBalanceLoading &&
+    userUSDCBalanceWei !== null &&
+    userUSDCBalanceWei >= videoPriceWei;
+
+  const purchaseButtonDisabled =
+    isProcessing ||
+    purchaseStatus !== "idle" ||
+    isBalanceLoading ||
+    !hasSufficientBalance;
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -59,21 +84,24 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
 
       <PurchaseStatusDisplay steps={getStatusSteps()} />
 
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center space-y-4">
         <button
           type="button"
           onClick={onInitiatePurchase}
-          disabled={isProcessing || purchaseStatus !== "idle"}
+          disabled={purchaseButtonDisabled}
           className="inline-flex justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ||
           purchaseStatus === "purchasing" ||
           purchaseStatus === "validating"
             ? "Processing..."
-            : `Purchase video for ${formatMoney(
-                USDCWeiToUSD(selectedOption.price)
-              )}`}
+            : `Purchase video for ${formatMoney(USDCWeiToUSD(videoPriceWei))}`}
         </button>
+        <UserBalanceDisplay
+          userUSDCBalanceWei={userUSDCBalanceWei}
+          isLoading={isBalanceLoading}
+          hasSufficientBalance={hasSufficientBalance}
+        />
       </div>
     </div>
   );
