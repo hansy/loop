@@ -20,7 +20,7 @@ import { useAccount } from "wagmi";
 import { truncateString } from "@/utils/truncateString";
 import Link from "next/link";
 
-const navigation = [{ name: "Library", href: "/library" }];
+const navigation = [{ name: "Dashboard", href: "/dashboard" }];
 
 interface BaseUserNavigationItem {
   name: string;
@@ -82,12 +82,10 @@ export default function Navbar() {
                 />
               </DisclosureButton>
             </div>
-            <div className="flex shrink-0 items-center">
-              <img
-                alt="Loop Logo"
-                src="https://tailwindcss.com/img/logos/mark.svg?color=indigo&shade=500"
-                className="h-8 w-auto"
-              />
+            <div className="flex flex-shrink-0 items-center">
+              <Link href="/" className="text-white text-2xl font-bold">
+                LOOP
+              </Link>
             </div>
             <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
               {isAuthenticated &&

@@ -77,7 +77,7 @@ export default function UploadForm() {
       toast.success(
         "Video uploaded successfully. It will be ready in a few moments!"
       );
-      router.push("/library");
+      router.push("/dashboard");
     } catch (error) {
       console.error("[UploadForm] Form submission error:", error);
       if (error instanceof Error) {

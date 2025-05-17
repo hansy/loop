@@ -64,26 +64,26 @@ export default function VideoPlayerOverlay({
           onClick={onProfileClick}
           className="absolute top-4 right-4 p-2 rounded-full bg-gray-800/50 hover:bg-gray-700/50 transition-colors"
         >
-          <UserCircleIcon className="h-6 w-6 text-gray-300" />
+          <UserCircleIcon className="h-10 w-10 text-gray-300" />
         </button>
       )}
       <div className="flex flex-col items-center gap-4 text-center px-4">
         {isLoading ? (
           <LoadingSpinner className="h-12 w-12 border-b-2 border-gray-100" />
         ) : (
-          <>
-            <LockClosedIcon className="h-12 w-12 text-gray-400" />
-            <div className="text-gray-100 text-lg font-medium">
+          <div className="flex flex-col items-center text-center mr-70">
+            <LockClosedIcon className="h-20 w-20 text-gray-400" />
+            <div className="text-gray-100 text-xl font-medium">
               Video is locked
             </div>
             <button
               type="button"
               onClick={isAuthenticated ? onUnlockClick : onAuthenticate}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-10 py-6 text-white rounded-lg hover:bg-white hover:text-black transition-colors text-3xl mt-9 bg-transparent border-2 border-white"
             >
-              {isAuthenticated ? "Unlock video" : "Verify access"}
+              {isAuthenticated ? "Unlock" : "Verify access"}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>
