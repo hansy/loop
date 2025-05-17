@@ -2,6 +2,7 @@ import { parseSignature, PublicClient } from "viem";
 import { DEFAULT_CHAIN } from "@/config/chainConfig";
 import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 import { Signature, TypedDataDomain, WalletClient } from "viem";
+import { IS_PRODUCTION } from "@/utils/env";
 
 // ERC20Permit ABI for nonces function
 const erc20PermitAbi = [
@@ -59,7 +60,7 @@ export const signPermit = async (
   nonce: bigint
 ): Promise<Signature> => {
   const domain: TypedDataDomain = {
-    name: "USDC",
+    name: IS_PRODUCTION ? "USD Coin" : "USDC",
     version: "2",
     chainId: DEFAULT_CHAIN.id,
     verifyingContract: CONTRACT_ADDRESSES.USDC,
