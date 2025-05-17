@@ -9,6 +9,7 @@ import { camelCaseString } from "@/utils/camelCaseString"; // Import camelCaseSt
 import { randomBytes } from "crypto"; // Import randomBytes
 import type { AuthSig, SessionSigsMap } from "@lit-protocol/types"; // Import AuthSig and SessionSigsMap
 import { VideoUnlockModal } from "@/features/videoUnlock"; // Import VideoUnlockModal
+import { getPlaybackUrl } from "@/services/client/playbackApi"; // Import getPlaybackUrl
 
 // Remove MessageEventData and ReceivedMessage if receivedMessage state is removed
 // interface MessageEventData {
@@ -53,7 +54,10 @@ export default function VideoAuthContent({
   const [litAuthSig, setLitAuthSig] = useState<AuthSig | null | undefined>(
     undefined
   );
-  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
+  const [playbackUrl, setPlaybackUrl] = useState<string | null | undefined>(
+    undefined
+  );
+  const [isCheckingAccessOrUrl, setIsCheckingAccessOrUrl] = useState(false);
   const [showUnlockButtonAndInfo, setShowUnlockButtonAndInfo] = useState(false);
   const [isAuthPageUnlockModalOpen, setIsAuthPageUnlockModalOpen] =
     useState(false);
@@ -83,7 +87,8 @@ export default function VideoAuthContent({
       success: boolean,
       currentSessionSigs: SessionSigsMap | null,
       videoIdFromReq?: string,
-      authSigForVideo?: AuthSig | null // Added litAuthSig parameter
+      authSigForVideo?: AuthSig | null,
+      finalPlaybackUrl?: string | null
     ) => {
       const target =
         window.opener || (window.parent !== window ? window.parent : null);
@@ -98,7 +103,8 @@ export default function VideoAuthContent({
                 authRequestPayload?.videoId ||
                 videoIdFromParam,
               sessionSigs: success ? currentSessionSigs : null,
-              litAuthSig: success ? authSigForVideo : null, // Include litAuthSig in payload
+              litAuthSig: success ? authSigForVideo : null,
+              playbackUrl: success ? finalPlaybackUrl : null,
             },
           },
           openerOrigin
@@ -106,35 +112,42 @@ export default function VideoAuthContent({
         console.log(
           `Sent AUTH_RESULT (success: ${success}, litAuthSig: ${
             authSigForVideo ? "present" : "absent"
-          })`
+          }, playbackUrl: ${finalPlaybackUrl ? "present" : "absent"})`
         );
       }
     },
     [openerOrigin, authRequestPayload, videoIdFromParam]
   );
 
-  const checkVideoAccess = useCallback(
+  const checkVideoAccessAndGetUrl = useCallback(
     async (
       currentSessionSigs: SessionSigsMap,
       currentMetadata: VideoMetadata
     ) => {
-      if (!currentMetadata.playbackAccess) {
-        // Check if playbackAccess exists
+      if (!currentMetadata.playbackAccess || !currentMetadata.id) {
         console.warn(
-          "Cannot check video access: playbackAccess metadata is missing."
+          "Cannot check video access/get URL: playbackAccess metadata or video ID is missing."
         );
-        setShowUnlockButtonAndInfo(true); // Show unlock button if no playback access info
-        setIsCheckingAccess(false);
-        // Send auth result indicating successful authentication but no Lit auth sig (as it couldn't be checked)
-        sendAuthResult(true, currentSessionSigs, currentMetadata.id, null);
+        setShowUnlockButtonAndInfo(true);
+        setIsCheckingAccessOrUrl(false);
+        sendAuthResult(
+          true,
+          currentSessionSigs,
+          currentMetadata.id,
+          null,
+          null
+        );
         return;
       }
 
-      setIsCheckingAccess(true);
-      setLitAuthSig(undefined); // Reset before check
+      setIsCheckingAccessOrUrl(true);
+      setLitAuthSig(undefined);
+      setPlaybackUrl(undefined);
       setShowUnlockButtonAndInfo(false);
+      let obtainedLitAuthSig: AuthSig | null = null;
 
       try {
+        console.log("Attempting to run Lit action...");
         const jsParams = {
           chain: camelCaseString(DEFAULT_CHAIN.name),
           nonce: randomBytes(16).toString("hex"),
@@ -143,29 +156,58 @@ export default function VideoAuthContent({
           dataToEncryptHash: currentMetadata.playbackAccess.dataToEncryptHash,
           accessControlConditions: currentMetadata.playbackAccess.acl,
         };
-
-        const authSigFromLit = await litServiceRef.current.runLitAction(
+        obtainedLitAuthSig = await litServiceRef.current.runLitAction(
           currentSessionSigs,
           jsParams
         );
+        setLitAuthSig(obtainedLitAuthSig);
+        console.log(
+          "Lit action successful, received authSig:",
+          obtainedLitAuthSig
+        );
 
-        console.log("Lit action successful, received authSig:", authSigFromLit);
-        setLitAuthSig(authSigFromLit);
+        console.log("Attempting to get playback URL with LitAuthSig...");
+        const signedPlaybackUrl = await getPlaybackUrl({
+          tokenId: currentMetadata.tokenId,
+          authSig: obtainedLitAuthSig,
+        });
+        setPlaybackUrl(signedPlaybackUrl);
+        console.log("Playback URL received:", signedPlaybackUrl);
         sendAuthResult(
           true,
           currentSessionSigs,
           currentMetadata.id,
-          authSigFromLit
+          obtainedLitAuthSig,
+          signedPlaybackUrl
         );
       } catch (error) {
-        console.error("Error checking video access with Lit:", error);
-        setLitAuthSig(null); // Indicates access check failed
-        setShowUnlockButtonAndInfo(true);
-        // Still send AUTH_RESULT success:true because authentication itself succeeded.
-        sendAuthResult(true, currentSessionSigs, currentMetadata.id, null);
+        console.error(
+          "Error during video access check or getting playback URL:",
+          error
+        );
+        // If error occurred after getting litAuthSig but before/during getPlaybackUrl
+        if (obtainedLitAuthSig) {
+          sendAuthResult(
+            true,
+            currentSessionSigs,
+            currentMetadata.id,
+            obtainedLitAuthSig,
+            null
+          );
+        } else {
+          // Error occurred during lit action itself
+          setLitAuthSig(null);
+          setShowUnlockButtonAndInfo(true);
+          sendAuthResult(
+            true,
+            currentSessionSigs,
+            currentMetadata.id,
+            null,
+            null
+          );
+        }
       } finally {
-        setIsCheckingAccess(false);
-        // Consider if litServiceRef.current.disconnect() is needed here or globally
+        setIsCheckingAccessOrUrl(false);
       }
     },
     [sendAuthResult]
@@ -213,21 +255,22 @@ export default function VideoAuthContent({
 
           if (isAuthenticated && sessionSigs) {
             console.log(
-              "User already fully authenticated (including backend & sessionSigs). Checking video access."
+              "User ALREADY authenticated. Checking video access & getting URL."
             );
-            checkVideoAccess(sessionSigs, metadata);
-          } else {
-            // If not fully authenticated by AuthContext's definition,
-            // always try to initiate or ensure the Privy login process is started.
-            // The login() from useLogin() should handle if a Privy process is already active.
+            checkVideoAccessAndGetUrl(sessionSigs, metadata);
+          } else if (!isAuthenticated) {
             console.log(
-              "User not fully authenticated by AuthContext. Attempting to call login(). Current AuthContext state: isAuthenticated =",
-              isAuthenticated, // from useAuth()
-              ", isAuthenticating (from AuthContext, for logging) =",
-              isAuthenticating // from useAuth(), logged for clarity but not used in this condition
+              "User not authenticated. Calling login(). AuthContext state: isAuthenticated=",
+              isAuthenticated,
+              ", isAuthenticating=",
+              isAuthenticating
             );
-            setLoginInitiatedByPage(true); // Track that this component instance initiated/propagated the login call
-            login(); // Call login() from AuthContext, which triggers Privy's useLogin
+            setLoginInitiatedByPage(true);
+            login();
+          } else {
+            console.log(
+              "REQUEST_AUTHENTICATION: User authenticated but sessionSigs might be pending. Waiting..."
+            );
           }
         } else {
           // Received a message with a 'type' property, but it's not REQUEST_AUTHENTICATION
@@ -236,7 +279,7 @@ export default function VideoAuthContent({
               ? (event.data as any).type
               : "unknown";
           console.warn(
-            `VideoAuthContent: Received message with known structure but unexpected type: '${unknownType}'. Full message:`,
+            `VideoAuthContent: Unexpected type: '${unknownType}'. Msg:`,
             event.data
           );
         }
@@ -254,7 +297,7 @@ export default function VideoAuthContent({
       else {
         // Catches truly unstructured messages or messages from other sources not matching your primary expected types.
         console.warn(
-          "VideoAuthContent: Received message with unexpected structure (not an object with 'type', or not a known provider like MetaMask):",
+          "VideoAuthContent: Unexpected message structure:",
           event.data
         );
       }
@@ -288,7 +331,7 @@ export default function VideoAuthContent({
     isAuthenticated,
     isAuthenticating,
     login,
-    checkVideoAccess,
+    checkVideoAccessAndGetUrl,
     sessionSigs,
     metadata,
   ]);
@@ -299,18 +342,17 @@ export default function VideoAuthContent({
     if (loginInitiatedByPage && authRequestPayload) {
       if (isAuthenticated && sessionSigs) {
         console.log(
-          "Login process successful (detected by VideoAuthContent). Now checking video access..."
+          "Login process successful. Checking video access & getting URL..."
         );
-        checkVideoAccess(sessionSigs, metadata);
+        checkVideoAccessAndGetUrl(sessionSigs, metadata);
         setLoginInitiatedByPage(false); // Reset flag
       } else if (!isAuthenticating && !isAuthenticated) {
         // This condition means auth process ended, but user is not authenticated.
         // Could be a login cancellation or failure.
         // As per user request, do not send AUTH_RESULT with success: false.
         console.log(
-          "Login failed or cancelled (detected by VideoAuthContent). No AUTH_RESULT (success: false) will be sent."
+          "Login process failed/cancelled. No AUTH_RESULT (false) sent."
         );
-        // sendAuthResult(false, null, authRequestPayload.videoId); // <<< LINE REMOVED/COMMENTED
         setLoginInitiatedByPage(false); // Reset flag, auth attempt is over. Popup remains open.
         // Update UI to reflect failed login, possibly show unlock button if videoId is known from payload.
         // This assumes authRequestPayload.videoId is the one we want to unlock.
@@ -325,7 +367,7 @@ export default function VideoAuthContent({
     sessionSigs,
     loginInitiatedByPage,
     authRequestPayload,
-    checkVideoAccess,
+    checkVideoAccessAndGetUrl,
     metadata,
   ]);
 
@@ -333,16 +375,14 @@ export default function VideoAuthContent({
     setIsAuthPageUnlockModalOpen(false);
     if (sessionSigs) {
       console.log(
-        "Unlock modal success. Re-checking video access with current sessionSigs."
+        "Unlock modal success. Re-checking video access & getting URL."
       );
-      checkVideoAccess(sessionSigs, metadata);
+      checkVideoAccessAndGetUrl(sessionSigs, metadata);
     } else {
-      console.warn(
-        "Cannot re-check video access after unlock: sessionSigs are missing."
-      );
+      console.warn("Cannot re-check after unlock: sessionSigs missing.");
       // Potentially guide user to re-authenticate if sessionSigs were lost
     }
-  }, [sessionSigs, metadata, checkVideoAccess]);
+  }, [sessionSigs, metadata, checkVideoAccessAndGetUrl]);
 
   const handleUnlockModalError = (error: string) => {
     console.error("VideoUnlockModal error in auth page:", error);
@@ -357,15 +397,15 @@ export default function VideoAuthContent({
       : String(user.email)
     : "user";
 
-  if (isCheckingAccess) {
+  if (isCheckingAccessOrUrl) {
     authStatusContent = (
       <p>
-        <strong>Checking video access...</strong>
+        <strong>Checking video access & retrieving URL...</strong>
       </p>
     );
   } else if (
     isAuthenticating ||
-    (loginInitiatedByPage && !isAuthenticated && !isCheckingAccess)
+    (loginInitiatedByPage && !isAuthenticated && !isCheckingAccessOrUrl)
   ) {
     // If login was initiated by this page but not yet authenticated and not checking access (implies pre-auth or privy modal active)
     authStatusContent = (
@@ -373,16 +413,31 @@ export default function VideoAuthContent({
         <strong>Authenticating... Please follow login prompts.</strong>
       </p>
     );
-  } else if (isAuthenticated && sessionSigs && litAuthSig) {
+  } else if (isAuthenticated && sessionSigs && litAuthSig && playbackUrl) {
     // Access granted
     authStatusContent = (
       <p>
-        <strong>
-          Successfully authenticated as {userDisplayEmail}. Video access
-          confirmed.
-        </strong>{" "}
+        <strong>Video unlocked! Authenticated as {userDisplayEmail}.</strong>{" "}
         You can close this window.
       </p>
+    );
+  } else if (
+    isAuthenticated &&
+    sessionSigs &&
+    litAuthSig &&
+    playbackUrl === null
+  ) {
+    // Authenticated, but unable to retrieve video URL
+    authStatusContent = (
+      <div>
+        <p>
+          <strong>Authenticated as {userDisplayEmail}.</strong>
+        </p>
+        <p>
+          However, we encountered an issue retrieving the video playback URL.
+          Please try again later.
+        </p>
+      </div>
     );
   } else if (
     isAuthenticated &&
@@ -417,7 +472,10 @@ export default function VideoAuthContent({
     // General case to show button if auth failed before access check
     authStatusContent = (
       <div>
-        <p>Authentication failed or was cancelled.</p>
+        <p>
+          Authentication or video access check failed. Please try again or
+          unlock access.
+        </p>
         <button
           onClick={() => setIsAuthPageUnlockModalOpen(true)}
           style={{
@@ -438,7 +496,7 @@ export default function VideoAuthContent({
     authRequestPayload &&
     !isAuthenticated &&
     !isAuthenticating &&
-    !isCheckingAccess
+    !isCheckingAccessOrUrl
   ) {
     // Auth failed or cancelled (covered by showUnlockButtonAndInfo now, but keep as fallback for clarity)
     // Or if REQUEST_AUTHENTICATION arrived but login hasn't been triggered (less likely with current flow)
@@ -491,18 +549,16 @@ export default function VideoAuthContent({
           {authStatusContent}
         </div>
       </div>
-      {isAuthPageUnlockModalOpen && metadata && (
-        <VideoUnlockModal
-          isOpen={isAuthPageUnlockModalOpen}
-          onClose={() => setIsAuthPageUnlockModalOpen(false)}
-          metadata={metadata}
-          handlers={{
-            onUnlockSuccess: handleUnlockModalSuccess,
-            onUnlockError: handleUnlockModalError,
-          }}
-          hasEmbeddedWallet={user?.wallet?.connectorType === "embedded"}
-        />
-      )}
+      <VideoUnlockModal
+        isOpen={isAuthPageUnlockModalOpen}
+        onClose={() => setIsAuthPageUnlockModalOpen(false)}
+        metadata={metadata}
+        handlers={{
+          onUnlockSuccess: handleUnlockModalSuccess,
+          onUnlockError: handleUnlockModalError,
+        }}
+        hasEmbeddedWallet={user?.wallet?.connectorType === "embedded"}
+      />
     </>
   );
 }
