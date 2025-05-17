@@ -167,6 +167,8 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       );
 
       setSessionSigs(sigs);
+
+      await litService.disconnect();
     } catch (error) {
       console.error("Failed to setup session sigs:", error);
       await logout();
