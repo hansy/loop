@@ -7,6 +7,7 @@ import PurchaseStatusDisplay from "./PurchaseStatus";
 import UserBalanceDisplay from "./UserBalanceDisplay";
 import { useAccount, useBalance } from "wagmi";
 import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
+import { IS_PRODUCTION } from "@/utils/env";
 
 interface UnlockPurchaseStepProps {
   selectedOption: UnlockOption;
@@ -73,6 +74,16 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
     isBalanceLoading ||
     !hasSufficientBalance;
 
+  const handleGetUSDCButtonClick = () => {
+    if (IS_PRODUCTION) {
+    } else {
+      window.open(
+        `https://faucet.circle.com/?address=${userAddress}`,
+        "_blank"
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -89,7 +100,7 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
           type="button"
           onClick={onInitiatePurchase}
           disabled={purchaseButtonDisabled}
-          className="inline-flex justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex justify-center rounded-md bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blackfocus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed mb-5 border border-black"
         >
           {isProcessing ||
           purchaseStatus === "purchasing" ||
@@ -101,6 +112,7 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
           userUSDCBalanceWei={userUSDCBalanceWei}
           isLoading={isBalanceLoading}
           hasSufficientBalance={hasSufficientBalance}
+          onActionButtonClick={handleGetUSDCButtonClick}
         />
       </div>
     </div>

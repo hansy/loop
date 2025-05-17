@@ -99,7 +99,6 @@ export function VideoContent({ video }: VideoContentProps) {
           accessControlConditions: metadata.playbackAccess?.acl,
         };
 
-        console.log(params);
         const authSig = await litClient.runLitAction(ss, params);
 
         setLitAuthSig(authSig);
@@ -172,7 +171,6 @@ export function VideoContent({ video }: VideoContentProps) {
         }}
         onUnlockClick={() => setIsUnlockModalOpen(true)}
       />
-
       {/* Video Details */}
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
