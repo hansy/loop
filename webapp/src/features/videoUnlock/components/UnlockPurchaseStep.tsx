@@ -8,6 +8,7 @@ import UserBalanceDisplay from "./UserBalanceDisplay";
 import { useAccount, useBalance } from "wagmi";
 import { CONTRACT_ADDRESSES } from "@/config/contractsConfig";
 import { IS_PRODUCTION } from "@/utils/env";
+import { useFundWallet } from "@privy-io/react-auth";
 
 interface UnlockPurchaseStepProps {
   selectedOption: UnlockOption;
@@ -28,6 +29,8 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
     address: userAddress,
     token: CONTRACT_ADDRESSES.USDC,
   });
+
+  const { fundWallet } = useFundWallet();
 
   if (selectedOption.type !== "payment" || !selectedOption.price) return null;
 
@@ -76,6 +79,10 @@ const UnlockPurchaseStep: React.FC<UnlockPurchaseStepProps> = ({
 
   const handleGetUSDCButtonClick = () => {
     if (IS_PRODUCTION) {
+      fundWallet(userAddress as string, {
+        amount: "5",
+        asset: "USDC",
+      });
     } else {
       window.open(
         `https://faucet.circle.com/?address=${userAddress}`,
