@@ -1,6 +1,8 @@
 import { findVideoById } from "@/services/server/database";
-import { VideoMetadata } from "@/types/video";
-import VideoAuthContent from "@/components/video/VideoAuthContent";
+// import { VideoMetadata } from "@/types/video"; // Corrected below
+import type { VideoMetadata } from "@/types"; // Corrected import path for VideoMetadata
+// import VideoAuthContent from "@/components/video/VideoAuthContent";
+import { VideoAuthContent } from "@/features/player/components";
 
 interface VideoAuthPageProps {
   params: Promise<{ videoId?: string }>;

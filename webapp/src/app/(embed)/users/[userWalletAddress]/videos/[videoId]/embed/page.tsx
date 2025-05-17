@@ -1,5 +1,6 @@
 import { findVideoById } from "@/services/server/database";
-import EmbeddedVideoContent from "@/components/video/EmbeddedVideoContent";
+// import EmbeddedVideoContent from "@/components/video/EmbeddedVideoContent";
+import { EmbeddedVideoContent } from "@/features/player/components";
 import type { VideoMetadata } from "@/types";
 
 interface PageProps {
