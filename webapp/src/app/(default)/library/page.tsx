@@ -18,7 +18,7 @@ export default async function Library() {
     redirect("/login");
   }
 
-  const userId = privyUser.customMetadata.appUserId as string;
+  const userId = privyUser.customMetadata?.appUserId as string;
   const videos = await findVideosByUserId(userId);
 
   return (

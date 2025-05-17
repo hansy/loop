@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import VideoPlayer from "./VideoPlayer";
 import { VideoUnlockModal } from "@/features/videoUnlock";
 import { formatDistanceToNow } from "date-fns";
@@ -19,6 +19,8 @@ import { LitService } from "@/services/client/encrpytion/litService.client";
 import { camelCaseString } from "@/utils/camelCaseString";
 import { DEFAULT_CHAIN } from "@/config/chainConfig";
 import { randomBytes } from "crypto";
+import { showSuccessToast, showErrorToast } from "@/utils/toast";
+
 /**
  * Interface defining the props for the VideoContent component.
  * @interface VideoContentProps
@@ -39,13 +41,16 @@ export function VideoContent({ video }: VideoContentProps) {
   const [src, setSrc] = useState<MediaSrc | undefined>(undefined);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLocked, setIsLocked] = useState(true);
   const [litAuthSig, setLitAuthSig] = useState<AuthSig | undefined>(undefined);
   const { sessionSigs, isAuthenticating } = useAuth();
   const { user } = usePrivy();
 
+  const isLocked = useMemo(() => {
+    return !!!src;
+  }, [src]);
+
   const handleUnlockError = (error: string) => {
-    console.error("Unlock failed:", error);
+    showErrorToast(error);
   };
 
   const fetchVideoUrl = useCallback(
@@ -64,11 +69,8 @@ export function VideoContent({ video }: VideoContentProps) {
           src: `${path}hls/index.m3u8`,
           type: "application/x-mpegurl",
         });
-
-        setIsLocked(false);
       } catch (error) {
         console.error("Error fetching video URL:", error);
-        setIsLocked(true);
         setSrc(undefined);
       } finally {
         setIsLoading(false);
@@ -87,14 +89,17 @@ export function VideoContent({ video }: VideoContentProps) {
 
       try {
         const litClient = new LitService();
-        const authSig = await litClient.runLitAction(ss, {
+        const params = {
           chain: camelCaseString(DEFAULT_CHAIN.name),
           nonce: randomBytes(16).toString("hex"),
           exp: Date.now() + 3 * 60 * 1000,
           ciphertext: metadata.playbackAccess?.ciphertext,
           dataToEncryptHash: metadata.playbackAccess?.dataToEncryptHash,
           accessControlConditions: metadata.playbackAccess?.acl,
-        });
+        };
+
+        console.log(params);
+        const authSig = await litClient.runLitAction(ss, params);
 
         setLitAuthSig(authSig);
 
@@ -111,6 +116,8 @@ export function VideoContent({ video }: VideoContentProps) {
   );
 
   const handleUnlockSuccess = useCallback(async () => {
+    showSuccessToast("Video unlocked successfully");
+    setIsUnlockModalOpen(false);
     await getLitAuthSig(sessionSigs);
   }, [sessionSigs, getLitAuthSig]);
 
@@ -129,10 +136,10 @@ export function VideoContent({ video }: VideoContentProps) {
 
   useEffect(() => {
     // If first attempt failed and we have sessionSigs, try again with authSig
-    if (isLocked && !!video.tokenId && !isLoading && litAuthSig) {
+    if (!isLocked && !!video.tokenId && !isLoading && litAuthSig) {
       fetchVideoUrl(video.tokenId.toString(), litAuthSig);
     }
-  }, [isLocked, fetchVideoUrl, video.tokenId, isLoading, litAuthSig]);
+  }, [fetchVideoUrl, video.tokenId, isLoading, litAuthSig, isLocked]);
 
   return (
     <div className="space-y-8">

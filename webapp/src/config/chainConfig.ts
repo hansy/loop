@@ -7,7 +7,6 @@ import { http } from "viem";
 export const LOGIN_METHODS: PrivyClientConfig["loginMethods"] = [
   "email",
   "wallet",
-  "google",
 ];
 
 // Environment variable to determine the environment
