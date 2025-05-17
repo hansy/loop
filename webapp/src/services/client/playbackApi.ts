@@ -1,13 +1,7 @@
 import { apiPost } from ".";
 import { PLAYBACK_ENDPOINT } from "@/config/appConfig";
 import type { AuthSig } from "@lit-protocol/types";
-
-/**
- * Response structure from the playback access endpoint
- */
-export interface PlaybackAccessResponse {
-  data: string;
-}
+import type { MediaSrc } from "@vidstack/react";
 
 /**
  * Request body for the playback access endpoint
@@ -18,15 +12,14 @@ export interface PlaybackAccessRequest {
 }
 
 /**
- * Fetches a signed URL for video playback
+ * Fetches a signed URL for video playback.
  *
- * @param tokenId - The token ID of the video
- * @param authSig - Optional auth signature for protected videos
- * @returns A promise that resolves with the playback access response
- * @throws {ClientApiError} If the API call fails
+ * @param params - The request parameters including tokenId and optional authSig.
+ * @returns A promise that resolves with the core MediaSrcDetails (InnermostPayload).
+ * @throws {ClientApiError} If the API call fails.
  */
-export async function getPlaybackUrl(
+export async function getPlaybackSrc(
   params: PlaybackAccessRequest
-): Promise<string> {
-  return apiPost<string>(`${PLAYBACK_ENDPOINT}`, params);
+): Promise<MediaSrc> {
+  return await apiPost<MediaSrc>(`${PLAYBACK_ENDPOINT}`, params);
 }

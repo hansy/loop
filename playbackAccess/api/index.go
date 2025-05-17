@@ -141,7 +141,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	// Handle different authentication methods
 	switch derivedVia {
 	case "lit.action":
-		if err := handleLitAction(r.Context(), rdb, signedMessage, tokenId, authSigAddress); err != nil {
+		if err := handleLitAction(r.Context(), rdb, signedMessage); err != nil {
 			HandleErr(w, http.StatusUnauthorized, err.Error(), err, "UNAUTHORIZED_LIT_ACTION", nil)
 			return
 		}
@@ -206,7 +206,7 @@ func HandleErr(w http.ResponseWriter, httpStatusCode int, publicErrMsg string, i
 }
 
 // handleLitAction processes authentication via lit.action
-func handleLitAction(ctx context.Context, rdb *redis.Client, signedMessage, tokenId, authSigAddress string) error {
+func handleLitAction(ctx context.Context, rdb *redis.Client, signedMessage string) error {
 	var parsedMessage model.SignedMessage
 	if err := json.Unmarshal([]byte(signedMessage), &parsedMessage); err != nil {
 		return fmt.Errorf("failed to parse signed message: %w", err)
@@ -245,19 +245,68 @@ func handleLitAction(ctx context.Context, rdb *redis.Client, signedMessage, toke
 	return nil
 }
 
+// SendSuccessResponse sends a standardized success JSON response.
+// It sets the Content-Type header, writes the HTTP status code, and encodes the given data payload
+// within a standard success structure: { "success": true, "data": dataPayload }.
+func SendSuccessResponse(w http.ResponseWriter, statusCode int, dataPayload interface{}) {
+	response := struct {
+		Success bool        `json:"success"`
+		Data    interface{} `json:"data"`
+	}{
+		Success: true,
+		Data:    dataPayload,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Log this internal error, as the primary response marshalling failed.
+		// The client will likely receive an incomplete response or timeout.
+		log.Printf("Critical: Failed to encode success response: %v, Payload: %+v", err, dataPayload)
+		// Avoid writing further to w as headers might have been sent and it could corrupt the response.
+	}
+}
+
 // CreateAndSendPublicSharedLink generates a public access link for a video using Storj.
 // It retrieves the Storj configuration, constructs the object path, and creates a
-// publicly accessible link for the video content.
+// publicly accessible link for the video content, formatted as a MediaSrc object
+// wrapped in the standard success response.
 func CreateAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
 	accessGrant, bucket := storj.GetStorjConfig()
+	// The objectPath for Storj link creation should point to the parent "directory"
+	// if the link is intended to allow access to multiple files within it.
+	// If the link should point directly to the HLS manifest, this might need adjustment
+	// based on how Storj sharing and link generation for specific files works.
+	// For now, assuming the current objectPath is for the "data" directory.
 	objectPath := videoId + "/data/"
 
-	url, err := storj.CreatePublicSharedLink(ctx, accessGrant, bucket, objectPath)
+	baseURL, err := storj.CreatePublicSharedLink(ctx, accessGrant, bucket, objectPath)
 	if err != nil {
 		HandleErr(w, http.StatusInternalServerError, "Failed to create public shared link", err, "INTERNAL_ERROR", nil)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"data": url})
+	// Append the HLS specific path. Ensure baseURL doesn't already have a trailing slash if not desired.
+	// Storj's edge.JoinShareURL usually creates clean URLs.
+	// If baseURL is "https://link.storjshare.io/raw/.../BUCKET/video_id/data/"
+	// then finalSrcURL will be "https://link.storjshare.io/raw/.../BUCKET/video_id/data/hls/index.m3u8"
+	finalSrcURL := baseURL
+	if !strings.HasSuffix(finalSrcURL, "/") {
+		finalSrcURL += "/"
+	}
+	finalSrcURL += "hls/index.m3u8"
+
+	mediaSrc := model.VideoSource{
+		// Id field removed as per user's modification
+		Src:  finalSrcURL,
+		Type: "application/x-mpegurl",
+	}
+
+	// This is the actual data payload for the { "success": true, "data": payload } structure.
+	// In this specific case, the client expects the data part to be { "data": mediaSrcDetails }
+	dataFieldPayload := map[string]model.VideoSource{
+		"data": mediaSrc,
+	}
+
+	SendSuccessResponse(w, http.StatusOK, dataFieldPayload)
 }

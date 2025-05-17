@@ -11,7 +11,7 @@ import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SessionSigsMap, AuthSig } from "@lit-protocol/types";
 import type { MediaSrc } from "@vidstack/react";
-import { getPlaybackUrl } from "@/services/client/playbackApi";
+import { getPlaybackSrc } from "@/services/client/playbackApi";
 import { PlaybackAccessRequest } from "@/services/client/playbackApi";
 import { usePrivy } from "@privy-io/react-auth";
 import { LitService } from "@/services/client/encrpytion/litService.client";
@@ -64,12 +64,9 @@ export function VideoContent({ video }: VideoContentProps) {
           authSig,
         };
 
-        const path = await getPlaybackUrl(params);
+        const src = await getPlaybackSrc(params);
 
-        setSrc({
-          src: `${path}hls/index.m3u8`,
-          type: "application/x-mpegurl",
-        });
+        setSrc(src);
       } catch (error) {
         console.error("Error fetching video URL:", error);
         setSrc(undefined);

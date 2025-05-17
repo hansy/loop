@@ -36,7 +36,6 @@ type SignedMessage struct {
 
 // VideoSource represents a video source
 type VideoSource struct {
-	Id   string `json:"id"`
 	Src  string `json:"src"`
 	Type string `json:"type"`
 }
