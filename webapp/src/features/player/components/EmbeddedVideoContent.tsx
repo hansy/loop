@@ -7,7 +7,6 @@ import {
   usePlayerAuthCommunication,
   type AuthResultPayload,
 } from "@/features/player/hooks";
-import { showErrorToast } from "@/utils/toast"; // Import toast utility
 import type { MediaSrc } from "@vidstack/react";
 
 interface EmbeddedVideoContentProps {
@@ -35,10 +34,10 @@ export default function EmbeddedVideoContent({
           payload.playbackSrc
         );
       } else {
-        const errMsg =
-          payload.error ||
-          "Authenticated, but video is not available for playback.";
-        showErrorToast(errMsg);
+        // const errMsg =
+        //   payload.error ||
+        //   "Authenticated, but video is not available for playback.";
+        // showErrorToast(errMsg);
         if (payload.litAuthSig) {
           console.warn(
             "[EmbeddedVideoContent] Auth success with LitAuthSig but no playbackUrl."
@@ -51,8 +50,8 @@ export default function EmbeddedVideoContent({
       }
     } else {
       setIsAuthenticatedSession(false);
-      const errMsg = payload.error || "Authentication failed.";
-      showErrorToast(errMsg);
+      // const errMsg = payload.error || "Authentication failed.";
+      // showErrorToast(errMsg);
       setVideoSrc(undefined);
       console.warn(
         "[EmbeddedVideoContent] Authentication failed:",
@@ -89,8 +88,8 @@ export default function EmbeddedVideoContent({
 
   const handleAuthenticate = useCallback(() => {
     if (!metadata.id) {
-      const errMsg = "Video ID is missing, cannot authenticate.";
-      showErrorToast(errMsg);
+      // const errMsg = "Video ID is missing, cannot authenticate.";
+      // showErrorToast(errMsg);
       return;
     }
     console.log("[EmbeddedVideoContent] Authenticate action triggered.");

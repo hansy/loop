@@ -24,10 +24,10 @@ type MessageFromPlayer = RequestAuthenticationMessage; // | OtherPlayerMessageTy
 export interface AuthResultPayload {
   success: boolean;
   videoId?: string;
-  sessionSigs?: SessionSigsMap | null; // Using SessionSigsMap directly
-  litAuthSig?: AuthSig | null; // Using AuthSig directly
+  sessionSigs?: SessionSigsMap | null;
+  litAuthSig?: AuthSig | null;
   playbackSrc?: MediaSrc | null;
-  error?: string | null; // For sending error messages to the player
+  error?: string | null;
 }
 
 /**

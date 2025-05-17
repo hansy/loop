@@ -9,78 +9,49 @@ import {
   type AuthRequestPayloadType,
 } from "@/features/player/hooks";
 import { VideoUnlockModal, type UnlockOption } from "@/features/videoUnlock";
-import { showErrorToast } from "@/utils/toast";
+// Toasts removed for now, focusing on console logs and UI state changes as per new request
 
 interface VideoAuthContentProps {
   metadata: VideoMetadata;
-  origin: string | undefined; // Origin of the player iframe, passed as a prop
+  origin: string | undefined;
 }
 
-// Basic button styling - can be moved to a CSS module or global style later
-const buttonStyles: React.CSSProperties = {
-  padding: "8px 16px",
-  margin: "4px",
-  border: "1px solid #ccc",
-  borderRadius: "4px",
-  cursor: "pointer",
-  backgroundColor: "#f0f0f0",
-};
-
-const primaryButtonStyles: React.CSSProperties = {
-  ...buttonStyles,
-  backgroundColor: "#007bff",
-  color: "white",
-  borderColor: "#007bff",
-};
-
-/**
- * Client component to handle the authentication flow for embedded videos.
- * It communicates with the parent player window, manages user authentication,
- * checks video access rights (e.g., using Lit Protocol), and returns the outcome.
- */
 export default function VideoAuthContent({
   metadata,
   origin: playerOriginProp,
 }: VideoAuthContentProps) {
-  const { login, isAuthenticated, isAuthenticating, sessionSigs } = useAuth();
+  const { user, login, isAuthenticated, isAuthenticating, sessionSigs } =
+    useAuth();
   const { videoAccessState, checkAccessAndGetUrl } = useVideoAccess(metadata);
 
   const [playerActualOrigin, setPlayerActualOrigin] = useState<string | null>(
     null
   );
-  const [statusMessage, setStatusMessage] = useState(
-    "Initializing authentication..."
-  );
-  const [showUnlockButtonAndInfo, setShowUnlockButtonAndInfo] = useState(false);
+  // Simplified status message for broader states
+  const [uiStatus, setUiStatus] = useState("Initializing...");
+  const [showUnlockAction, setShowUnlockAction] = useState(false);
   const [isAuthPageUnlockModalOpen, setIsAuthPageUnlockModalOpen] =
     useState(false);
   const [requestedVideoId, setRequestedVideoId] = useState<string | null>(null);
-
-  // To trigger re-check after modal success
   const [modalUnlockAttempted, setModalUnlockAttempted] = useState(0);
 
-  // Validate and set the player origin from prop
   useEffect(() => {
     if (playerOriginProp) {
       try {
         const url = new URL(playerOriginProp);
         setPlayerActualOrigin(url.origin);
-        setStatusMessage("Waiting for player...");
+        setUiStatus("Waiting for player interaction...");
       } catch (error) {
         console.error(
           "[VideoAuthContent] Invalid player origin prop:",
           playerOriginProp,
           error
         );
-        const errMsg = "Error: Invalid player origin configuration.";
-        setStatusMessage(errMsg);
-        showErrorToast(errMsg);
+        setUiStatus("Configuration Error."); // Minimal user-facing error
       }
     } else {
       console.warn("[VideoAuthContent] Player origin prop is missing.");
-      const errMsg = "Error: Player origin not specified.";
-      setStatusMessage(errMsg);
-      showErrorToast(errMsg);
+      setUiStatus("Configuration Error.");
     }
   }, [playerOriginProp]);
 
@@ -90,18 +61,16 @@ export default function VideoAuthContent({
         "[VideoAuthContent] Authentication requested by player:",
         payload
       );
-      setRequestedVideoId(payload.videoId || metadata.id); // Prefer payload, fallback to metadata
-      setStatusMessage("Processing authentication request...");
+      setRequestedVideoId(payload.videoId || metadata.id);
+      setShowUnlockAction(false); // Reset unlock action visibility
 
       if (isAuthenticated && sessionSigs) {
-        setStatusMessage("User authenticated. Checking video access...");
+        setUiStatus("Checking video access...");
         await checkAccessAndGetUrl(sessionSigs);
       } else if (isAuthenticating) {
-        setStatusMessage("Authentication in progress...");
+        setUiStatus("Authenticating...");
       } else {
-        setStatusMessage(
-          "User not authenticated. Please log in to access this video."
-        );
+        setUiStatus("Login required to access this video.");
       }
     },
     [
@@ -114,65 +83,67 @@ export default function VideoAuthContent({
   );
 
   const { sendAuthResult, authRequestPayload } = useAuthPageCommunication(
-    playerActualOrigin, // Use the validated origin
-    metadata.id, // Fallback videoId if not in player request
+    playerActualOrigin,
+    metadata.id,
     handleAuthRequest
   );
 
-  // Effect to react to changes in video access state from useVideoAccess hook
   useEffect(() => {
     if (videoAccessState.isLoading) {
-      setStatusMessage("Verifying video access details...");
-      setShowUnlockButtonAndInfo(false);
+      setUiStatus("Verifying video access...");
+      setShowUnlockAction(false);
       return;
     }
 
     if (videoAccessState.error) {
-      const errMsg = `Error checking video access: ${videoAccessState.error}`;
-      setStatusMessage(errMsg);
-      showErrorToast(errMsg);
+      console.error(
+        "[VideoAuthContent] Error checking video access:",
+        videoAccessState.error
+      );
+      setUiStatus("Access to this video couldn't be verified."); // Generic message
       sendAuthResult({
         success: !!sessionSigs,
         videoId: requestedVideoId || metadata.id,
         sessionSigs: sessionSigs || null,
         litAuthSig: null,
-        playbackSrc: null,
+        playbackSrc: null, // Changed from playbackUrl
         error: videoAccessState.error,
       });
       if (sessionSigs) {
-        setShowUnlockButtonAndInfo(true);
+        setShowUnlockAction(true);
       }
       return;
     }
 
     if (videoAccessState.playbackSrc && videoAccessState.litAuthSig) {
-      setStatusMessage("Access granted. Video unlocked.");
+      setUiStatus("Access Granted! Returning to player...");
+      setShowUnlockAction(false);
       sendAuthResult({
         success: true,
         videoId: requestedVideoId || metadata.id,
         sessionSigs,
         litAuthSig: videoAccessState.litAuthSig,
-        playbackSrc: videoAccessState.playbackSrc,
+        playbackSrc: videoAccessState.playbackSrc, // Changed from playbackUrl
       });
-      setShowUnlockButtonAndInfo(false);
+      // Optionally close window after a short delay to show message
+      // setTimeout(() => window.close(), 1500);
     } else if (
       sessionSigs &&
       !videoAccessState.isLoading &&
       !videoAccessState.error &&
       !videoAccessState.playbackSrc
     ) {
-      setStatusMessage(
-        "Access to this video was not granted based on current conditions."
-      );
+      console.warn("[VideoAuthContent] Access conditions not met after check.");
+      setUiStatus("Specific access conditions for this video are not met.");
       sendAuthResult({
         success: true,
         videoId: requestedVideoId || metadata.id,
         sessionSigs,
         litAuthSig: videoAccessState.litAuthSig,
-        playbackSrc: null,
+        playbackSrc: null, // Changed from playbackUrl
         error: "Video access conditions not met.",
       });
-      setShowUnlockButtonAndInfo(true);
+      setShowUnlockAction(true);
     }
   }, [
     videoAccessState,
@@ -182,13 +153,19 @@ export default function VideoAuthContent({
     requestedVideoId,
   ]);
 
-  // Effect to handle user authentication state changes from useAuth
   useEffect(() => {
-    if (isAuthenticated && sessionSigs && authRequestPayload) {
-      setStatusMessage("User now authenticated. Re-checking video access...");
+    if (
+      isAuthenticated &&
+      sessionSigs &&
+      authRequestPayload &&
+      !videoAccessState.isLoading &&
+      !videoAccessState.playbackSrc &&
+      !videoAccessState.error
+    ) {
+      setUiStatus("Authenticated. Checking video access...");
       checkAccessAndGetUrl(sessionSigs);
     } else if (!isAuthenticated && !isAuthenticating && authRequestPayload) {
-      setStatusMessage("Please log in to access this video.");
+      setUiStatus("Login required to proceed.");
     }
   }, [
     isAuthenticated,
@@ -196,14 +173,12 @@ export default function VideoAuthContent({
     isAuthenticating,
     authRequestPayload,
     checkAccessAndGetUrl,
+    videoAccessState,
   ]);
 
-  // Effect to re-check access after a successful modal unlock
   useEffect(() => {
     if (modalUnlockAttempted > 0 && isAuthenticated && sessionSigs) {
-      setStatusMessage(
-        "Unlock attempt successful. Re-verifying video access..."
-      );
+      setUiStatus("Unlock attempt processed. Re-verifying video access...");
       checkAccessAndGetUrl(sessionSigs);
     }
   }, [
@@ -214,15 +189,13 @@ export default function VideoAuthContent({
   ]);
 
   const handleLogin = async () => {
-    setStatusMessage("Redirecting to login...");
+    setUiStatus("Redirecting to login...");
     try {
       await login();
-      setStatusMessage("Login successful. Waiting for video access check...");
+      // Subsequent logic is handled by useEffect reacting to isAuthenticated and authRequestPayload
     } catch (error) {
       console.error("[VideoAuthContent] Login failed:", error);
-      const errMsg = "Login failed. Please try again.";
-      setStatusMessage(errMsg);
-      showErrorToast(errMsg);
+      setUiStatus("Login process failed. Please try again.");
       sendAuthResult({
         success: false,
         videoId: requestedVideoId || metadata.id,
@@ -231,105 +204,131 @@ export default function VideoAuthContent({
     }
   };
 
-  const handleUnlockVideo = () => {
-    setIsAuthPageUnlockModalOpen(true);
-  };
-
-  const handleUnlockModalClose = () => {
-    setIsAuthPageUnlockModalOpen(false);
-    setStatusMessage(
-      "Unlock process ended. You might need to try authenticating again."
-    );
-  };
+  const handleUnlockVideo = () => setIsAuthPageUnlockModalOpen(true);
+  const handleUnlockModalClose = () => setIsAuthPageUnlockModalOpen(false);
 
   const handleUnlockSuccess = (option: UnlockOption) => {
     setIsAuthPageUnlockModalOpen(false);
-    setStatusMessage(
-      `Unlock method '${
+    console.log(
+      `[VideoAuthContent] Unlock method '${
         option.title || option.type
-      }' reported success. Re-checking video access...`
+      }' reported success.`
     );
     setModalUnlockAttempted((prev) => prev + 1);
   };
 
   const handleUnlockError = (errorMsg: string) => {
     setIsAuthPageUnlockModalOpen(false);
-    const finalMsg = `Unlock attempt failed: ${errorMsg}. You may need to try authenticating again.`;
-    setStatusMessage(finalMsg);
-    showErrorToast(finalMsg);
+    console.error(
+      "[VideoAuthContent] Unlock attempt failed in modal:",
+      errorMsg
+    );
+    setUiStatus(
+      "Unlock attempt failed. You might need to try unlocking again or contact support."
+    );
   };
 
-  if (!playerActualOrigin) {
+  if (!playerActualOrigin && uiStatus === "Configuration Error.") {
     return (
-      <div style={{ padding: "20px", fontFamily: "sans-serif", color: "red" }}>
-        <h1>Authentication Error</h1>
-        <p>{statusMessage}</p>
-        <p>Cannot proceed without a valid player origin.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 text-center">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          Configuration Error
+        </h1>
+        <p className="text-gray-700">
+          This authentication page is not configured correctly. Please contact
+          support.
+        </p>
+        <p className="text-xs text-gray-500 mt-2">
+          Origin: {playerOriginProp || "Not Provided"}
+        </p>
       </div>
     );
   }
 
-  return (
-    <div
-      style={{ padding: "20px", fontFamily: "sans-serif", textAlign: "center" }}
-    >
-      <h2>Video Access Authentication</h2>
-      <p>Video: {metadata.title || "Loading..."}</p>
-      <hr style={{ margin: "20px 0" }} />
+  const AuthStateDisplay = () => {
+    if (isAuthenticating)
+      return <p className="text-sm text-gray-600">Connecting Wallet...</p>;
+    if (isAuthenticated && user) {
+      return (
+        <div className="text-sm">
+          <p className="text-gray-600">Authenticated as:</p>
+          <p className="font-semibold text-gray-800 break-all">
+            {user.wallet?.address || "Address not available"}
+          </p>
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={handleLogin}
+        className="w-full px-4 py-3 font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
+      >
+        Connect Wallet & Authenticate
+      </button>
+    );
+  };
 
-      {isAuthenticating && <p>Logging in, please wait...</p>}
-      {videoAccessState.isLoading && (
-        <p>Checking video access, please wait...</p>
-      )}
-
-      <p style={{ fontWeight: "bold", minHeight: "40px" }}>{statusMessage}</p>
-
-      {!isAuthenticated && !isAuthenticating && (
-        <button onClick={handleLogin} style={buttonStyles}>
-          Login to Continue
+  const AccessStatusDisplay = () => {
+    if (!isAuthenticated) return null; // Don't show access status if not logged in
+    if (videoAccessState.isLoading)
+      return (
+        <p className="text-sm text-gray-600 mt-4">Checking your access...</p>
+      );
+    if (videoAccessState.playbackSrc) {
+      return (
+        <p className="mt-4 text-lg font-semibold text-green-600">
+          ✔️ Access Granted! Returning to video...
+        </p>
+      );
+    }
+    if (showUnlockAction) {
+      return (
+        <button
+          onClick={handleUnlockVideo}
+          className="w-full mt-6 px-4 py-3 font-semibold text-gray-100 bg-black rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-150 ease-in-out"
+        >
+          Unlock Video Content
         </button>
-      )}
+      );
+    }
+    // Default status message if no specific action above applies
+    return <p className="text-sm text-gray-600 mt-4">{uiStatus}</p>;
+  };
 
-      {isAuthenticated &&
-        showUnlockButtonAndInfo &&
-        !videoAccessState.isLoading && (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-            }}
-          >
-            <p>
-              You have access to your account, but specific conditions for this
-              video might not be met, or an error occurred.
-            </p>
-            <button onClick={handleUnlockVideo} style={primaryButtonStyles}>
-              Attempt to Unlock Video
-            </button>
-          </div>
-        )}
+  return (
+    <div className="flex flex-col items-center bg-gray-50 p-4 pt-8 md:pt-16">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg text-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-1">
+            {metadata.title || "Video Title Not Available"}
+          </h2>
+          <p className="text-xs text-gray-500">
+            Video ID: {metadata.id || "N/A"}
+          </p>
+        </div>
 
-      {isAuthPageUnlockModalOpen && metadata && (
-        <VideoUnlockModal
-          isOpen={isAuthPageUnlockModalOpen}
-          onClose={handleUnlockModalClose}
-          metadata={metadata}
-          handlers={{
-            onUnlockSuccess: handleUnlockSuccess,
-            onUnlockError: (error: string | Error) =>
-              handleUnlockError(error instanceof Error ? error.message : error),
-          }}
-          hasEmbeddedWallet={false}
-        />
-      )}
+        <hr className="border-gray-200" />
 
-      <div style={{ marginTop: "30px", fontSize: "0.8em", color: "#777" }}>
-        <p>Please do not close this window. It will update automatically.</p>
-        <p>Video ID: {requestedVideoId || metadata.id}</p>
-        <p>Player Origin: {playerActualOrigin}</p>
+        <div className="min-h-[60px] flex flex-col justify-center items-center">
+          <AuthStateDisplay />
+        </div>
+
+        <div className="min-h-[60px] flex flex-col justify-center items-center">
+          <AccessStatusDisplay />
+        </div>
       </div>
+
+      <VideoUnlockModal
+        isOpen={isAuthPageUnlockModalOpen}
+        onClose={handleUnlockModalClose}
+        metadata={metadata}
+        handlers={{
+          onUnlockSuccess: handleUnlockSuccess,
+          onUnlockError: (error: string | Error) =>
+            handleUnlockError(error instanceof Error ? error.message : error),
+        }}
+        hasEmbeddedWallet={false}
+      />
     </div>
   );
 }
