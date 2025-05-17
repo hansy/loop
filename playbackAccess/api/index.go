@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/joho/godotenv/autoload"
-
 	"github.com/loop/playbackAccess/internal/auth"
 	"github.com/loop/playbackAccess/internal/db"
 	"github.com/loop/playbackAccess/internal/model"

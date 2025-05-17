@@ -32,7 +32,7 @@ playbackAccess/
 ### Building
 
 ```bash
-go build -o playback-server ./api
+go build -o playback-server ./
 ```
 
 ### Running
