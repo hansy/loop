@@ -404,7 +404,7 @@ export default function VideoAuthContent({
     authStatusContent = (
       <div>
         <p>
-          <strong>Authenticated as {userDisplayEmail}.</strong>
+          <strong>Authenticated as {user?.wallet?.address}.</strong>
         </p>
         <p>
           However, we encountered an issue retrieving the video playback URL.
@@ -422,7 +422,7 @@ export default function VideoAuthContent({
     authStatusContent = (
       <div>
         <p>
-          <strong>Authenticated as {userDisplayEmail}.</strong>
+          <strong>Authenticated as {user?.wallet?.address}.</strong>
         </p>
         <p>You do not have access to this video yet.</p>
         <button
