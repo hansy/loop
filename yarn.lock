@@ -4227,6 +4227,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@neondatabase/serverless@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@neondatabase/serverless@npm:1.0.0"
+  dependencies:
+    "@types/node": "npm:^22.10.2"
+    "@types/pg": "npm:^8.8.0"
+  checksum: 10c0/62bb99bfef7c20dc2c948209bc8eb05ca88123ecc44b3cbf49536c0002d9a9b22e6b0d9de17e5baaae0ef7b409f65cb9d1a9197d97826a480a81e10f6c31c643
+  languageName: node
+  linkType: hard
+
 "@next/env@npm:15.3.2":
   version: 15.3.2
   resolution: "@next/env@npm:15.3.2"
@@ -7902,6 +7912,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^22.10.2":
+  version: 22.15.18
+  resolution: "@types/node@npm:22.15.18"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10c0/e23178c568e2dc6b93b6aa3b8dfb45f9556e527918c947fe7406a4c92d2184c7396558912400c3b1b8d0fa952ec63819aca2b8e4d3545455fc6f1e9623e09ca6
+  languageName: node
+  linkType: hard
+
 "@types/normalize-package-data@npm:^2.4.0":
   version: 2.4.4
   resolution: "@types/normalize-package-data@npm:2.4.4"
@@ -7926,6 +7945,17 @@ __metadata:
     pg-protocol: "npm:*"
     pg-types: "npm:^4.0.1"
   checksum: 10c0/68ab3b2ae56a9ef891fcefe814b4a4eb6da4f4f3860b56d2821de8fe024eb093895ffe152414c708d889f7110cd5b3839392d2955b07d38f111df8e6186c7e8c
+  languageName: node
+  linkType: hard
+
+"@types/pg@npm:^8.8.0":
+  version: 8.15.2
+  resolution: "@types/pg@npm:8.15.2"
+  dependencies:
+    "@types/node": "npm:*"
+    pg-protocol: "npm:*"
+    pg-types: "npm:^4.0.1"
+  checksum: 10c0/e3bc75f02af897ed960e83d1af9bd0cba1ff41cd0cbae0eaee323eae84f55e6d433f620aa1c72f7bd5107c80b018185c0e47de553cfc5439514c3da98768ef6c
   languageName: node
   linkType: hard
 
@@ -19524,6 +19554,7 @@ __metadata:
     "@heroicons/react": "npm:^2.2.0"
     "@lit-protocol/encryption": "npm:^7.1.1"
     "@lit-protocol/lit-node-client": "npm:^7.1.1"
+    "@neondatabase/serverless": "npm:^1.0.0"
     "@privy-io/react-auth": "npm:^2.13.1"
     "@privy-io/server-auth": "npm:^1.22.0"
     "@privy-io/wagmi": "npm:^1.0.3"
