@@ -3,10 +3,10 @@ import EmbeddedVideoContent from "@/components/video/EmbeddedVideoContent";
 import type { VideoMetadata } from "@/types";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     userWalletAddress: string; // Part of the URL structure
     videoId: string;
-  };
+  }>;
 }
 
 /**

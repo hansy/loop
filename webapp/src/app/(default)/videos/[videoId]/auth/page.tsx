@@ -3,8 +3,8 @@ import { VideoMetadata } from "@/types/video";
 import VideoAuthContent from "@/components/video/VideoAuthContent";
 
 interface VideoAuthPageProps {
-  params: { videoId?: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ videoId?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 /**
@@ -21,7 +21,7 @@ export default async function VideoAuthPage({
   searchParams,
 }: VideoAuthPageProps) {
   const { videoId } = await params;
-  const playerOrigin = searchParams?.playerOrigin as string | undefined;
+  const playerOrigin = (await searchParams).playerOrigin as string | undefined;
 
   if (!videoId) {
     console.error("VideoAuthPage: videoId is missing from params.");

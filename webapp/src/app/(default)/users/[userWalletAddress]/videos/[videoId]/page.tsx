@@ -4,10 +4,10 @@ import { VideoContent } from "@/components/video/VideoContent";
 import Container from "@/components/layout/Container";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     userWalletAddress: string;
     videoId: string;
-  };
+  }>;
 }
 
 /**
