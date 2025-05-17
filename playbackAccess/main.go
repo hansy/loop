@@ -11,7 +11,7 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"github.com/loop/playbackAccess/internal/handler"
+	"github.com/loop/playbackAccess/handler"
 )
 
 func main() {

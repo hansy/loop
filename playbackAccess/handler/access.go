@@ -12,13 +12,11 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/joho/godotenv/autoload"
-
-	"github.com/loop/playbackAccess/internal/auth"
-	"github.com/loop/playbackAccess/internal/db"
-	"github.com/loop/playbackAccess/internal/model"
-	"github.com/loop/playbackAccess/internal/redis"
-	"github.com/loop/playbackAccess/internal/storj"
+	"github.com/loop/playbackAccess/auth"
+	"github.com/loop/playbackAccess/db"
+	"github.com/loop/playbackAccess/model"
+	"github.com/loop/playbackAccess/redis"
+	"github.com/loop/playbackAccess/storj"
 	redisgo "github.com/redis/go-redis/v9"
 )
 
