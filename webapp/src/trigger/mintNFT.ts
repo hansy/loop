@@ -12,6 +12,7 @@ import { updateCID } from "./updateCID";
 
 export const mintNFT = task({
   id: "mint-nft",
+  machine: "small-2x",
   maxDuration: 300,
   run: async (payload: { videoId: string }) => {
     const contractService = new ContractService();
