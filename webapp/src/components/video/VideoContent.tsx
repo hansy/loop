@@ -6,7 +6,6 @@ import { VideoUnlockModal } from "@/features/videoUnlock";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { IPFS_GATEWAY } from "@/config/ipfsConfig";
-import { truncateString } from "@/utils/truncateString";
 import { Video } from "@/types/video";
 import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +19,9 @@ import { camelCaseString } from "@/utils/camelCaseString";
 import { DEFAULT_CHAIN } from "@/config/chainConfig";
 import { randomBytes } from "crypto";
 import { showSuccessToast, showErrorToast } from "@/utils/toast";
-
+import VideoEmbedCode from "./VideoEmbedCode";
+import { APP_HOST } from "@/config/appConfig";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 /**
  * Interface defining the props for the VideoContent component.
  * @interface VideoContentProps
@@ -187,22 +188,39 @@ export function VideoContent({ video }: VideoContentProps) {
             </p>
           </div>
           <div className="flex-shrink-0">
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <Link
-                href={`${IPFS_GATEWAY}${video.ipfsCid}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <code className="text-sm text-gray-900 font-mono">
-                  {truncateString(video.ipfsCid, 5, 5)}
-                </code>
-              </Link>
+            <div>
+              <div className="mt-2 flex">
+                <Link
+                  href={`${IPFS_GATEWAY}${video.ipfsCid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  type="button"
+                  className="flex shrink-0 items-center rounded-l-md bg-white px-3 text-base text-gray-500 outline-1 -outline-offset-1 outline-gray-300 sm:text-sm/6"
+                >
+                  <span>IPFS</span>
+                  <ArrowTopRightOnSquareIcon className="ml-2 w-4 h-4" />
+                </Link>
+                <input
+                  readOnly
+                  id="company-website"
+                  name="company-website"
+                  type="text"
+                  value={video.ipfsCid as string}
+                  className="-ml-px block w-full grow rounded-r-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                />
+              </div>
             </div>
+            <VideoEmbedCode
+              appHost={APP_HOST}
+              creatorAddress={metadata.creator}
+              videoId={video.id}
+              videoTitle={metadata.title}
+            />
           </div>
         </div>
 
         {metadata.description && (
-          <div>
+          <div className="mt-6">
             <h2 className="text-lg font-semibold text-gray-900">Description</h2>
             <p className="mt-2 text-gray-600 whitespace-pre-wrap">
               {metadata.description}
