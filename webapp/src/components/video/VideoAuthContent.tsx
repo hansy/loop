@@ -272,34 +272,7 @@ export default function VideoAuthContent({
               "REQUEST_AUTHENTICATION: User authenticated but sessionSigs might be pending. Waiting..."
             );
           }
-        } else {
-          // Received a message with a 'type' property, but it's not REQUEST_AUTHENTICATION
-          const unknownType =
-            typeof (event.data as any).type === "string"
-              ? (event.data as any).type
-              : "unknown";
-          console.warn(
-            `VideoAuthContent: Unexpected type: '${unknownType}'. Msg:`,
-            event.data
-          );
         }
-      } else if (
-        typeof event.data === "object" &&
-        event.data !== null &&
-        "name" in event.data &&
-        (event.data as { name: unknown }).name === "metamask-provider"
-      ) {
-        // Specifically identify and log (or ignore) MetaMask messages
-        // console.log("VideoAuthContent: Ignoring MetaMask provider message:", event.data);
-        // No action needed for these, so we can just return or do nothing.
-      }
-      // Add more 'else if' blocks here for other known message sources you want to specifically handle or ignore
-      else {
-        // Catches truly unstructured messages or messages from other sources not matching your primary expected types.
-        console.warn(
-          "VideoAuthContent: Unexpected message structure:",
-          event.data
-        );
       }
     };
 
