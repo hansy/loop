@@ -123,7 +123,7 @@ export default function VideoCard({ video }: VideoCardProps) {
                 : "bg-blue-50 text-blue-700"
             }`}
           >
-            {video.visibility}
+            {metadata.visibility}
           </span>
           {metadata.isNSFW && (
             <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-50 text-red-700">
