@@ -2,6 +2,7 @@ import { base, baseSepolia } from "viem/chains";
 import { PrivyClientConfig } from "@privy-io/react-auth";
 import { createConfig } from "@privy-io/wagmi";
 import { http } from "viem";
+import { IS_PRODUCTION } from "@/utils/env";
 
 // Define login methods
 export const LOGIN_METHODS: PrivyClientConfig["loginMethods"] = [
@@ -9,13 +10,10 @@ export const LOGIN_METHODS: PrivyClientConfig["loginMethods"] = [
   "wallet",
 ];
 
-// Environment variable to determine the environment
-const NEXT_PUBLIC_ENVIRONMENT = process.env.NEXT_PUBLIC_ENVIRONMENT;
 const CLIENT_ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 const SERVER_ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 
-export const DEFAULT_CHAIN =
-  NEXT_PUBLIC_ENVIRONMENT === "production" ? base : baseSepolia;
+export const DEFAULT_CHAIN = IS_PRODUCTION ? base : baseSepolia;
 
 /**
  * Defines the active chain and supported chains primarily for PrivyProvider config.
