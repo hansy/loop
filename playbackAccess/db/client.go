@@ -13,7 +13,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/loop/playbackAccess/internal/model"
+	"github.com/loop/playbackAccess/model"
 )
 
 // Config holds database connection pool settings

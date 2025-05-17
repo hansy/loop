@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/loop/playbackAccess/internal/model"
+	"github.com/loop/playbackAccess/model"
 	"github.com/redis/go-redis/v9"
 )
 
