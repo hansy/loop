@@ -89,11 +89,11 @@ function convertRuleToLitFormat(
       conditionType: "evmContract",
       contractAddress: CONTRACT_ADDRESSES.PURCHASE_MANAGER,
       functionName: "hasPurchasedVideo",
-      functionParams: [":userAddress", paywallRule.tokenId],
+      functionParams: [paywallRule.tokenId, ":userAddress"],
       functionAbi: {
         inputs: [
-          { type: "address", name: "user" },
           { type: "uint256", name: "tokenId" },
+          { type: "address", name: "purchaser" },
         ],
         name: "hasPurchasedVideo",
         outputs: [{ type: "bool", name: "" }],

@@ -24,4 +24,7 @@ npx hardhat deploy:pmStorage --netword <NETWORK>
 # Deploy PurchaseManager contract
 npx hardhat deploy:pm --nft <NFT_CONTRACT_ADDRESS> --storage <PM_STORAGE_ADDRESS> --network <NETWORK>
 
+# Verify Purchase Manager ontract
+npx hardhat verify --constructor-args pmConstructorArgs.js --network <NETWORK> <PM_ADDRESS>
+
 ```

@@ -10,7 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:dev": "drizzle-kit migrate --config=drizzle.dev.config.ts",
     "db:migrate:prod": "drizzle-kit migrate --config=drizzle.prod.config.ts",
-    "db:studio": "drizzle-kit studio",
+    "db:studio": "drizzle-kit studio --config=drizzle.dev.config.ts",
     "trigger:dev": "npx trigger.dev@latest dev",
     "trigger:deploy": "npx trigger.dev@latest deploy"
   },

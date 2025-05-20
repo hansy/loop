@@ -41,6 +41,9 @@ const config: HardhatUserConfig = {
       accounts: getAccounts(prodPrivateKey),
     },
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
 
 task("deploy:all", "Deploys all contracts", async (_, { run }) => {
