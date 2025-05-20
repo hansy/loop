@@ -11,7 +11,7 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"github.com/loop/playbackAccess/handler"
+	"github.com/loop/playbackAccess/api"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 
 	// Set up routes
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler.Handler)
+	mux.HandleFunc("/", api.Handler)
 
 	port := os.Getenv("PORT")
 	if port == "" {

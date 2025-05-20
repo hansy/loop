@@ -1,5 +1,5 @@
-// Package handler provides HTTP request handlers for the playback access API.
-package handler
+// Package api provides HTTP request handlers for the playback access API.
+package api
 
 import (
 	"context"
@@ -297,16 +297,10 @@ func CreateAndSendPublicSharedLink(w http.ResponseWriter, videoId string) {
 	finalSrcURL += "hls/index.m3u8"
 
 	mediaSrc := model.VideoSource{
-		// Id field removed as per user's modification
 		Src:  finalSrcURL,
 		Type: "application/x-mpegurl",
 	}
 
-	// This is the actual data payload for the { "success": true, "data": payload } structure.
-	// In this specific case, the client expects the data part to be { "data": mediaSrcDetails }
-	dataFieldPayload := map[string]model.VideoSource{
-		"data": mediaSrc,
-	}
-
-	SendSuccessResponse(w, http.StatusOK, dataFieldPayload)
+	// Send the mediaSrc directly as the data payload
+	SendSuccessResponse(w, http.StatusOK, mediaSrc)
 }

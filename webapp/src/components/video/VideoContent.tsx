@@ -133,7 +133,7 @@ export function VideoContent({ video }: VideoContentProps) {
 
   useEffect(() => {
     // If first attempt failed and we have sessionSigs, try again with authSig
-    if (!isLocked && !!video.tokenId && !isLoading && litAuthSig) {
+    if (isLocked && !!video.tokenId && !isLoading && !!litAuthSig) {
       fetchVideoUrl(video.tokenId.toString(), litAuthSig);
     }
   }, [fetchVideoUrl, video.tokenId, isLoading, litAuthSig, isLocked]);

@@ -168,7 +168,7 @@ export class LitService {
 
       console.log(litActionResult);
 
-      if (litActionResult.success) {
+      if (litActionResult.success && litActionResult.logs === undefined) {
         const res = litActionResult.response as string;
 
         if (res !== "") {
