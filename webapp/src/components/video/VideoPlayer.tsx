@@ -89,6 +89,14 @@ export default function VideoPlayer({
   onAuthenticate,
   onUnlockClick,
 }: VideoPlayerProps) {
+  const showPosterImage = (coverImage?: string) => {
+    if (coverImage) {
+      return coverImage;
+    }
+
+    return "/cover_image.png";
+  };
+
   return (
     <MediaPlayer
       className="w-full aspect-video bg-black"
@@ -99,7 +107,10 @@ export default function VideoPlayer({
       onEnded={onEnded}
     >
       <MediaProvider>
-        <Poster src={poster} />
+        <Poster
+          src={showPosterImage(poster)}
+          className="absolute inset-0 block h-full w-full bg-black rounded-md opacity-0 transition-opacity data-[visible]:opacity-100 [&>img]:h-full [&>img]:w-full [&>img]:object-contain object-cover"
+        />
         {captions?.map((caption) => (
           <Track
             key={caption.src}

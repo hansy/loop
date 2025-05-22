@@ -57,10 +57,13 @@ export function AuthProvider({ children }: AuthProviderProps): ReactElement {
       await registerUserWithBackend();
     },
     onError: (error: PrivyErrorCode) => {
-      console.error("Privy login error:", error);
+      if (error !== "exited_auth_flow") {
+        console.error("Privy login error:", error);
+        showErrorToast("Failed to log in. Please try again.");
+      }
+
       setIsBackendRegistered(false);
       setSessionSigs(null);
-      showErrorToast("Failed to log in. Please try again.");
     },
   });
 

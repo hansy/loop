@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import VideoPlayer from "./VideoPlayer";
 import { VideoUnlockModal } from "@/features/videoUnlock";
 import { formatDistanceToNow } from "date-fns";
@@ -9,19 +9,13 @@ import { IPFS_GATEWAY } from "@/config/ipfsConfig";
 import { Video } from "@/types/video";
 import { VideoMetadata } from "@/types/video";
 import { useAuth } from "@/contexts/AuthContext";
-import type { SessionSigsMap, AuthSig } from "@lit-protocol/types";
-import type { MediaSrc } from "@vidstack/react";
-import { getPlaybackSrc } from "@/services/client/playbackApi";
-import { PlaybackAccessRequest } from "@/services/client/playbackApi";
 import { usePrivy } from "@privy-io/react-auth";
-import { LitService } from "@/services/client/encrpytion/litService.client";
-import { camelCaseString } from "@/utils/camelCaseString";
-import { DEFAULT_CHAIN } from "@/config/chainConfig";
-import { randomBytes } from "crypto";
 import { showSuccessToast, showErrorToast } from "@/utils/toast";
 import VideoEmbedCode from "./VideoEmbedCode";
 import { APP_HOST } from "@/config/appConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { useVideoPlayback } from "@/hooks/useVideoPlayback";
+
 /**
  * Interface defining the props for the VideoContent component.
  * @interface VideoContentProps
@@ -39,12 +33,13 @@ interface VideoContentProps {
  */
 export function VideoContent({ video }: VideoContentProps) {
   const metadata = video.metadata as VideoMetadata;
-  const [src, setSrc] = useState<MediaSrc | undefined>(undefined);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [litAuthSig, setLitAuthSig] = useState<AuthSig | undefined>(undefined);
   const { sessionSigs, isAuthenticating } = useAuth();
   const { user } = usePrivy();
+  const { src, isLoading, fetchVideoSrc } = useVideoPlayback(
+    video.metadata as VideoMetadata,
+    sessionSigs
+  );
 
   const isLocked = useMemo(() => {
     return !!!src;
@@ -54,89 +49,12 @@ export function VideoContent({ video }: VideoContentProps) {
     showErrorToast(error);
   };
 
-  const fetchVideoUrl = useCallback(
-    async (tokenId: string, authSig?: AuthSig) => {
-      setIsLoading(true);
-
-      try {
-        const params: PlaybackAccessRequest = {
-          tokenId,
-          authSig,
-        };
-
-        const src = await getPlaybackSrc(params);
-
-        setSrc(src);
-      } catch (error) {
-        console.error("Error fetching video URL:", error);
-        setSrc(undefined);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  const getLitAuthSig = useCallback(
-    async (ss: SessionSigsMap | null) => {
-      if (!ss) {
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        const litClient = new LitService();
-        const params = {
-          chain: camelCaseString(DEFAULT_CHAIN.name),
-          nonce: randomBytes(16).toString("hex"),
-          exp: Date.now() + 3 * 60 * 1000,
-          ciphertext: metadata.playbackAccess?.ciphertext,
-          dataToEncryptHash: metadata.playbackAccess?.dataToEncryptHash,
-          accessControlConditions: metadata.playbackAccess?.acl,
-        };
-
-        const authSig = await litClient.runLitAction(ss, params);
-
-        setLitAuthSig(authSig);
-
-        await litClient.disconnect();
-      } catch (error) {
-        console.error("Error fetching Lit auth sig:", error);
-
-        setLitAuthSig(undefined);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [metadata.playbackAccess]
-  );
-
   const handleUnlockSuccess = useCallback(async () => {
     showSuccessToast("Video unlocked successfully");
     setIsUnlockModalOpen(false);
-    await getLitAuthSig(sessionSigs);
-  }, [sessionSigs, getLitAuthSig]);
 
-  useEffect(() => {
-    if (sessionSigs) {
-      getLitAuthSig(sessionSigs);
-    }
-  }, [sessionSigs, getLitAuthSig]);
-
-  useEffect(() => {
-    if (video.tokenId) {
-      // First try without authSig (in case video is public)
-      fetchVideoUrl(video.tokenId.toString());
-    }
-  }, [fetchVideoUrl, video.tokenId]);
-
-  useEffect(() => {
-    // If first attempt failed and we have sessionSigs, try again with authSig
-    if (isLocked && !!video.tokenId && !isLoading && !!litAuthSig) {
-      fetchVideoUrl(video.tokenId.toString(), litAuthSig);
-    }
-  }, [fetchVideoUrl, video.tokenId, isLoading, litAuthSig, isLocked]);
+    await fetchVideoSrc();
+  }, [fetchVideoSrc]);
 
   return (
     <div className="space-y-8">

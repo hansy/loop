@@ -57,7 +57,7 @@ export default function VideoPlayerOverlay({
   }
 
   return (
-    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center">
+    <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center">
       {isAuthenticated && (
         <button
           type="button"
