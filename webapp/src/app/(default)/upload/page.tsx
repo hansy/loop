@@ -11,7 +11,7 @@ export default async function UploadPage() {
   try {
     await getVerifiedPrivyUserFromCookies(await cookies());
   } catch {
-    redirect("/login");
+    redirect("/");
   }
 
   return <UploadContent />;

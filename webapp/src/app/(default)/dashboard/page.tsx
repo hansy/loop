@@ -15,7 +15,7 @@ export default async function Library() {
   try {
     privyUser = await getVerifiedPrivyUserFromCookies(await cookies());
   } catch {
-    redirect("/login");
+    redirect("/");
   }
 
   const userId = privyUser.customMetadata?.appUserId as string;
