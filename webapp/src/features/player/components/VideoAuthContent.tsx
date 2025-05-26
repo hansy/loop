@@ -5,10 +5,10 @@ import type { VideoMetadata } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useAuthPageCommunication,
-  useVideoAccess,
   type AuthRequestPayloadType,
 } from "@/features/player/hooks";
 import { VideoUnlockModal, type UnlockOption } from "@/features/videoUnlock";
+import { useVideoPlayback } from "@/hooks/useVideoPlayback";
 // Toasts removed for now, focusing on console logs and UI state changes as per new request
 
 interface VideoAuthContentProps {
@@ -22,7 +22,10 @@ export default function VideoAuthContent({
 }: VideoAuthContentProps) {
   const { user, login, isAuthenticated, isAuthenticating, sessionSigs } =
     useAuth();
-  const { videoAccessState, checkAccessAndGetUrl } = useVideoAccess(metadata);
+  const { src, isLoading, fetchVideoSrc } = useVideoPlayback(
+    metadata,
+    sessionSigs
+  );
 
   const [playerActualOrigin, setPlayerActualOrigin] = useState<string | null>(
     null
@@ -62,24 +65,18 @@ export default function VideoAuthContent({
         payload
       );
       setRequestedVideoId(payload.videoId || metadata.id);
-      setShowUnlockAction(false); // Reset unlock action visibility
+      setShowUnlockAction(false);
 
       if (isAuthenticated && sessionSigs) {
         setUiStatus("Checking video access...");
-        await checkAccessAndGetUrl(sessionSigs);
+        await fetchVideoSrc();
       } else if (isAuthenticating) {
         setUiStatus("Authenticating...");
       } else {
         setUiStatus("Login required to access this video.");
       }
     },
-    [
-      isAuthenticated,
-      sessionSigs,
-      checkAccessAndGetUrl,
-      isAuthenticating,
-      metadata.id,
-    ]
+    [isAuthenticated, sessionSigs, isAuthenticating, metadata.id, fetchVideoSrc]
   );
 
   const { sendAuthResult, authRequestPayload } = useAuthPageCommunication(
@@ -89,64 +86,38 @@ export default function VideoAuthContent({
   );
 
   useEffect(() => {
-    if (videoAccessState.isLoading) {
+    if (isLoading) {
       setUiStatus("Verifying video access...");
       setShowUnlockAction(false);
       return;
     }
 
-    if (videoAccessState.error) {
-      console.error(
-        "[VideoAuthContent] Error checking video access:",
-        videoAccessState.error
-      );
-      setUiStatus("Access to this video couldn't be verified."); // Generic message
-      sendAuthResult({
-        success: !!sessionSigs,
-        videoId: requestedVideoId || metadata.id,
-        sessionSigs: sessionSigs || null,
-        litAuthSig: null,
-        playbackSrc: null, // Changed from playbackUrl
-        error: videoAccessState.error,
-      });
-      if (sessionSigs) {
-        setShowUnlockAction(true);
-      }
-      return;
-    }
-
-    if (videoAccessState.playbackSrc && videoAccessState.litAuthSig) {
-      setUiStatus("Access Granted! Returning to player...");
-      setShowUnlockAction(false);
-      sendAuthResult({
-        success: true,
-        videoId: requestedVideoId || metadata.id,
-        sessionSigs,
-        litAuthSig: videoAccessState.litAuthSig,
-        playbackSrc: videoAccessState.playbackSrc, // Changed from playbackUrl
-      });
-      // Optionally close window after a short delay to show message
-      // setTimeout(() => window.close(), 1500);
-    } else if (
-      sessionSigs &&
-      !videoAccessState.isLoading &&
-      !videoAccessState.error &&
-      !videoAccessState.playbackSrc
-    ) {
+    if (!src && sessionSigs) {
       console.warn("[VideoAuthContent] Access conditions not met after check.");
       setUiStatus("Specific access conditions for this video are not met.");
       sendAuthResult({
         success: true,
         videoId: requestedVideoId || metadata.id,
         sessionSigs,
-        litAuthSig: videoAccessState.litAuthSig,
-        playbackSrc: null, // Changed from playbackUrl
+        litAuthSig: null,
+        playbackSrc: null,
         error: "Video access conditions not met.",
       });
       setShowUnlockAction(true);
+    } else if (src) {
+      setUiStatus("Access Granted! Returning to player...");
+      setShowUnlockAction(false);
+      sendAuthResult({
+        success: true,
+        videoId: requestedVideoId || metadata.id,
+        sessionSigs,
+        litAuthSig: null,
+        playbackSrc: src,
+      });
     }
   }, [
-    videoAccessState,
+    src,
+    isLoading,
     sendAuthResult,
     sessionSigs,
     metadata.id,
@@ -158,12 +129,11 @@ export default function VideoAuthContent({
       isAuthenticated &&
       sessionSigs &&
       authRequestPayload &&
-      !videoAccessState.isLoading &&
-      !videoAccessState.playbackSrc &&
-      !videoAccessState.error
+      !isLoading &&
+      !src
     ) {
       setUiStatus("Authenticated. Checking video access...");
-      checkAccessAndGetUrl(sessionSigs);
+      fetchVideoSrc();
     } else if (!isAuthenticated && !isAuthenticating && authRequestPayload) {
       setUiStatus("Login required to proceed.");
     }
@@ -172,21 +142,17 @@ export default function VideoAuthContent({
     sessionSigs,
     isAuthenticating,
     authRequestPayload,
-    checkAccessAndGetUrl,
-    videoAccessState,
+    fetchVideoSrc,
+    isLoading,
+    src,
   ]);
 
   useEffect(() => {
     if (modalUnlockAttempted > 0 && isAuthenticated && sessionSigs) {
       setUiStatus("Unlock attempt processed. Re-verifying video access...");
-      checkAccessAndGetUrl(sessionSigs);
+      fetchVideoSrc();
     }
-  }, [
-    modalUnlockAttempted,
-    isAuthenticated,
-    sessionSigs,
-    checkAccessAndGetUrl,
-  ]);
+  }, [modalUnlockAttempted, isAuthenticated, sessionSigs, fetchVideoSrc]);
 
   const handleLogin = async () => {
     setUiStatus("Redirecting to login...");
@@ -270,11 +236,11 @@ export default function VideoAuthContent({
 
   const AccessStatusDisplay = () => {
     if (!isAuthenticated) return null; // Don't show access status if not logged in
-    if (videoAccessState.isLoading)
+    if (isLoading)
       return (
         <p className="text-sm text-gray-600 mt-4">Checking your access...</p>
       );
-    if (videoAccessState.playbackSrc) {
+    if (src) {
       return (
         <p className="mt-4 text-lg font-semibold text-green-600">
           ✔️ Access Granted! Returning to video...
@@ -327,7 +293,7 @@ export default function VideoAuthContent({
           onUnlockError: (error: string | Error) =>
             handleUnlockError(error instanceof Error ? error.message : error),
         }}
-        hasEmbeddedWallet={false}
+        hasEmbeddedWallet={user?.wallet?.connectorType === "embedded"}
       />
     </div>
   );

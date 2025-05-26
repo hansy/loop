@@ -26,6 +26,11 @@ interface LitActionParams {
   exp: number;
 }
 
+// const removeLitLocalStorageObjects = () => {
+//   localStorage!.removeItem("lit-wallet-sig");
+//   localStorage!.removeItem("lit-session-key");
+// };
+
 /**
  * Service for handling Lit Protocol encryption operations
  */
@@ -60,6 +65,8 @@ export class LitService {
     }
 
     await this.client.disconnect();
+
+    // removeLitLocalStorageObjects();
   }
 
   /**

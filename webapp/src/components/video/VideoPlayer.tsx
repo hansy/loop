@@ -13,7 +13,7 @@ import VideoPlayerOverlay from "./VideoPlayerOverlay";
 /**
  * Interface defining the props for the VideoPlayer component.
  * @interface VideoPlayerProps
- * @property {MediaSrc} src - The HLS video source URL and type
+ * @property {MediaSrc | null} src - The HLS video source URL and type
  * @property {string} [poster] - Optional poster image URL to display before video playback
  * @property {string} [title] - Optional title of the video
  * @property {Array<{src: string, label: string, language: string}>} [captions] - Optional array of caption tracks
