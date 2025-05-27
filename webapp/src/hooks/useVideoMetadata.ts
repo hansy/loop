@@ -5,6 +5,7 @@ import { VideoMetadata, VideoMetadataSchema } from "@/validations/videoSchemas";
 import { v7 as uuidv7 } from "uuid";
 import { convertToLitFormat } from "@/features/accessControl/utils/litConversion";
 import { ACC_TOKEN_PLACEHOLDER } from "@/config/litConfig";
+import { VideoCoverImage } from "@/types";
 
 interface UseVideoMetadataReturn {
   metadata: VideoMetadata;
@@ -17,7 +18,7 @@ interface UseVideoMetadataReturn {
   setPrice: (price: number) => void;
   setIsDownloadable: (isDownloadable: boolean) => void;
   setIsNSFW: (isNSFW: boolean) => void;
-  setCoverImage: (coverImage: string) => void;
+  setCoverImage: (coverImage: VideoCoverImage) => void;
   // Video upload state setters
   setVideoKey: (key: string) => void;
   setVideoType: (type: string) => void;
@@ -48,7 +49,9 @@ export function useVideoMetadata(): UseVideoMetadataReturn {
   const [price, setPrice] = useState(0);
   const [isDownloadable, setIsDownloadable] = useState(false);
   const [isNSFW, setIsNSFW] = useState(false);
-  const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
+  const [coverImage, setCoverImage] = useState<VideoCoverImage | undefined>(
+    undefined
+  );
 
   // Video upload state
   const [videoKey, setVideoKey] = useState<string | undefined>(undefined);

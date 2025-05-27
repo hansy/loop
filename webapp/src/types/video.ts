@@ -25,8 +25,7 @@ export interface VideoSource {
  * Represents a video cover image.
  */
 export interface VideoCoverImage {
-  width: number;
-  height: number;
+  id: string;
   src: string;
 }
 
@@ -63,7 +62,7 @@ interface VideoMetadataBase {
   isNSFW: boolean;
   price: VideoPrice;
   sources: VideoSource[];
-  coverImage?: string;
+  coverImage?: VideoCoverImage;
   playbackAccess?: VideoAccess;
 }
 

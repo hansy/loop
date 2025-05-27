@@ -7,6 +7,7 @@ import {
 import { handleApiRoute } from "@/services/server/api";
 import { AppError } from "@/services/server/api/error";
 import { User } from "@privy-io/server-auth";
+import { StorageType } from "@/services/server/external/s3/types";
 
 /**
  * GET /api/s3/multipart/[uploadId]
@@ -15,6 +16,7 @@ import { User } from "@privy-io/server-auth";
  *
  * Query parameters:
  * - key: string; // S3 key for the upload
+ * - storageType: string; // Storage type for the upload
  *
  * Response:
  * {
@@ -35,20 +37,25 @@ async function getHandler(
   console.log("context", context);
 
   const { uploadId } = await context.params;
-  console.log("uploadId!", uploadId);
   const key = req.nextUrl.searchParams.get("key");
-  console.log("key!", key);
+  const storageType = req.nextUrl.searchParams.get(
+    "storageType"
+  ) as StorageType;
 
   if (!key || typeof key !== "string") {
     throw new AppError("Missing or invalid key parameter", 400);
   }
 
   try {
-    const s3 = initializeS3Client("uploadVideo");
-    const parts = await listParts(s3, {
-      key,
-      uploadId,
-    });
+    const s3 = initializeS3Client(storageType);
+    const parts = await listParts(
+      s3,
+      {
+        key,
+        uploadId,
+      },
+      storageType
+    );
     return Response.json({ success: true, data: parts });
   } catch (error) {
     console.error("Error listing parts:", error);
@@ -87,17 +94,24 @@ async function deleteHandler(
 
   const { uploadId } = await params;
   const key = req.nextUrl.searchParams.get("key");
+  const storageType = req.nextUrl.searchParams.get(
+    "storageType"
+  ) as StorageType;
 
   if (!key || typeof key !== "string") {
     throw new AppError("Missing or invalid key parameter", 400);
   }
 
   try {
-    const s3 = initializeS3Client("uploadVideo");
-    await abortMultipartUpload(s3, {
-      key,
-      uploadId,
-    });
+    const s3 = initializeS3Client(storageType);
+    await abortMultipartUpload(
+      s3,
+      {
+        key,
+        uploadId,
+      },
+      storageType
+    );
     return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof Error && error.name === "AccessDenied") {

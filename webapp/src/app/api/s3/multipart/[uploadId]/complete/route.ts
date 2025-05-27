@@ -6,6 +6,7 @@ import {
 import { handleApiRoute } from "@/services/server/api";
 import { AppError } from "@/services/server/api/error";
 import { User } from "@privy-io/server-auth";
+import { StorageType } from "@/services/server/external/s3/types";
 
 /**
  * POST /api/s3/multipart/[uploadId]/complete
@@ -14,6 +15,7 @@ import { User } from "@privy-io/server-auth";
  *
  * Query parameters:
  * - key: string; // S3 key for the upload
+ * - storageType: string; // Storage type for the upload
  *
  * Request body:
  * {
@@ -38,9 +40,10 @@ async function handler(
   }
 
   const { uploadId } = await params;
-  console.log("uploadId", uploadId);
   const key = req.nextUrl.searchParams.get("key");
-  console.log("key", key);
+  const storageType = req.nextUrl.searchParams.get(
+    "storageType"
+  ) as StorageType;
   const body = await req.json();
   const { parts } = body;
 
@@ -71,14 +74,18 @@ async function handler(
     }
   }
 
-  const s3 = initializeS3Client("uploadVideo");
+  const s3 = initializeS3Client(storageType);
 
   // Complete the multipart upload
-  const location = await completeMultipartUpload(s3, {
-    key,
-    uploadId,
-    parts,
-  });
+  const location = await completeMultipartUpload(
+    s3,
+    {
+      key,
+      uploadId,
+      parts,
+    },
+    storageType
+  );
 
   return Response.json({
     success: true,

@@ -15,6 +15,7 @@ import VideoEmbedCode from "./VideoEmbedCode";
 import { APP_HOST } from "@/config/appConfig";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { useVideoPlayback } from "@/hooks/useVideoPlayback";
+import { getCoverImageSrc } from "@/utils/coverImage";
 
 /**
  * Interface defining the props for the VideoContent component.
@@ -61,7 +62,7 @@ export function VideoContent({ video }: VideoContentProps) {
       {/* Video Player */}
       <VideoPlayer
         src={src}
-        poster={metadata.coverImage}
+        poster={getCoverImageSrc(metadata.coverImage?.src)}
         title={metadata.title}
         isLoading={isLoading || isAuthenticating}
         isAuthenticated={!!sessionSigs}

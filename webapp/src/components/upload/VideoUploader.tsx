@@ -38,6 +38,7 @@ export function VideoUploader({
   // Use a ref to maintain the Uppy instance across renders
   const uppyRef = useRef<Uppy | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const storageType = "storj";
 
   // Handle file added event with useCallback to prevent recreation
   const handleFileAdded = useCallback(async () => {
@@ -86,6 +87,7 @@ export function VideoUploader({
                   key: `${videoId}/video.${extension}`,
                   type: file.type,
                   metadata: file.meta,
+                  storageType,
                 }
               );
               return result;
@@ -102,7 +104,9 @@ export function VideoUploader({
             const uploadIdEnc = encodeURIComponent(options.uploadId ?? "");
 
             try {
-              await apiDelete(`/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`);
+              await apiDelete(
+                `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}&storageType=${storageType}`
+              );
             } catch {
               return Promise.reject("Error aborting multipart upload");
             }
@@ -142,7 +146,9 @@ export function VideoUploader({
               const result = await apiGet<{
                 url: string;
                 expires: number;
-              }>(`/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}`);
+              }>(
+                `/api/s3/multipart/${uploadId}/${partNumber}?key=${keyEnc}&storageType=${storageType}`
+              );
 
               return result;
             } catch {
@@ -159,7 +165,7 @@ export function VideoUploader({
 
             try {
               const result = await apiGet<AwsS3Part[]>(
-                `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}`
+                `/api/s3/multipart/${uploadIdEnc}?key=${keyEnc}&storageType=${storageType}`
               );
 
               return result;
@@ -185,7 +191,7 @@ export function VideoUploader({
 
             try {
               const result = await apiPost<{ location?: string }>(
-                `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}`,
+                `/api/s3/multipart/${uploadIdEnc}/complete?key=${keyEnc}&storageType=${storageType}`,
                 { parts }
               );
 

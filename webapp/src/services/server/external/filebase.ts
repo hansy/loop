@@ -23,3 +23,35 @@ export const upload = async (
     );
   }
 };
+
+export const getObject = async (key: string, bucket: string) => {
+  const { accessKeyId, secretAccessKey } = CREDS.ipfs;
+  const objectManager = new ObjectManager(accessKeyId, secretAccessKey, {
+    bucket,
+  });
+
+  try {
+    const response = await objectManager.get(key, {});
+
+    if (response) {
+      return response;
+    }
+
+    throw new AppError("Object not found", 404, "FILEBASE_OBJECT_NOT_FOUND", {
+      key,
+    });
+  } catch (error) {
+    throw new AppError(
+      "Error getting object from Filebase",
+      500,
+      "FILEBASE_GET_OBJECT_ERROR",
+      error
+    );
+  }
+};
+
+export const getObjectCID = async (key: string, bucket: string) => {
+  const obj = await getObject(key, bucket);
+
+  return obj.Metadata?.cid;
+};

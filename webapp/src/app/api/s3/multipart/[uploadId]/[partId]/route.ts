@@ -6,6 +6,7 @@ import {
 import { handleApiRoute } from "@/services/server/api";
 import { AppError } from "@/services/server/api/error";
 import { User } from "@privy-io/server-auth";
+import { StorageType } from "@/services/server/external/s3/types";
 
 /**
  * GET /api/s3/multipart/[uploadId]/[partId]
@@ -14,6 +15,7 @@ import { User } from "@privy-io/server-auth";
  *
  * Query parameters:
  * - key: string; // S3 key for the upload
+ * - storageType: string; // Storage type for the upload
  *
  * Response:
  * {
@@ -40,6 +42,9 @@ async function handler(
 
   const { uploadId, partId } = await params;
   const key = req.nextUrl.searchParams.get("key");
+  const storageType = req.nextUrl.searchParams.get(
+    "storageType"
+  ) as StorageType;
   const partNumber = parseInt(partId, 10);
 
   if (isNaN(partNumber) || partNumber < 1) {
@@ -50,12 +55,16 @@ async function handler(
     throw new AppError("Missing key parameter", 400, "MISSING_KEY_PARAMETER");
   }
 
-  const s3 = initializeS3Client("uploadVideo");
-  const data = await getUploadPartSignedUrl(s3, {
-    key,
-    uploadId,
-    partNumber,
-  });
+  const s3 = initializeS3Client(storageType);
+  const data = await getUploadPartSignedUrl(
+    s3,
+    {
+      key,
+      uploadId,
+      partNumber,
+    },
+    storageType
+  );
 
   return Response.json({ success: true, data });
 }

@@ -17,6 +17,7 @@ import { User } from "@privy-io/server-auth";
  *   type: string;      // Content type of the file
  *   metadata: object;  // Optional metadata for the upload
  *   key: string;       // S3 key for the upload
+ *   storageType: string; // Storage type for the upload
  * }
  *
  * Response:
@@ -37,7 +38,7 @@ async function handler(
   }
 
   const body = await req.json();
-  const { type, metadata, key } = body;
+  const { type, metadata, key, storageType } = body;
 
   if (typeof key !== "string") {
     throw new AppError(
@@ -55,12 +56,16 @@ async function handler(
     );
   }
 
-  const s3 = initializeS3Client("uploadVideo");
-  const data = await createMultipartUpload(s3, {
-    key,
-    contentType: type,
-    metadata: metadata || {},
-  });
+  const s3 = initializeS3Client(storageType);
+  const data = await createMultipartUpload(
+    s3,
+    {
+      key,
+      contentType: type,
+      metadata: metadata || {},
+    },
+    storageType
+  );
 
   return Response.json({ success: true, data });
 }

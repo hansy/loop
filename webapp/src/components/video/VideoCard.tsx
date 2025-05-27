@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { VideoMetadata } from "@/types/video";
 import Image from "next/image";
+import { getCoverImageSrc } from "@/utils/coverImage";
 
 /**
  * Interface defining the props for the VideoCard component.
@@ -89,7 +90,7 @@ export default function VideoCard({ video }: VideoCardProps) {
     >
       <div className="aspect-video bg-gray-100 relative">
         <Image
-          src={metadata.coverImage || "/cover_image.png"}
+          src={getCoverImageSrc(metadata.coverImage?.src)}
           alt={metadata.title}
           className="w-full h-full object-cover"
           width={400}

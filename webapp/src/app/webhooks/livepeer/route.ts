@@ -5,7 +5,7 @@ import {
 } from "@/services/server/database";
 import type { VideoMetadata, VideoSource } from "@/types";
 import { AppError } from "@/services/server/api/error";
-import { VIDEO_BUCKET } from "@/services/server/external/s3";
+import { STORJ_BUCKET } from "@/services/server/external/s3";
 import {
   handleWebhook,
   successResponse,
@@ -90,7 +90,7 @@ async function handleLivepeerWebhook(
         const srcId = `${video.id}/data/hls/index.m3u8`;
         const src: VideoSource = {
           id: srcId,
-          src: `storj://${VIDEO_BUCKET}/${srcId}`,
+          src: `storj://${STORJ_BUCKET}/${srcId}`,
           type: "application/x-mpegURL",
         };
         const metadata = video.metadata as VideoMetadata;

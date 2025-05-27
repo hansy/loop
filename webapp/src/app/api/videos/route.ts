@@ -5,6 +5,8 @@ import { User as PrivyUserType } from "@privy-io/server-auth";
 import { createVideo, updateVideo } from "@/services/server/database";
 import { VideoMetadataSchema } from "@/validations/videoSchemas";
 import { transcode } from "@/services/server/external/livepeer";
+import { getObjectCID } from "@/services/server/external/filebase";
+import { IPFS_BUCKET } from "@/services/server/external/s3";
 
 /**
  * POST /api/videos
@@ -35,6 +37,20 @@ export const POST = handleApiRoute(
     }
 
     const metadata = validationResult.data;
+
+    // Get the cover image CID from IPFS
+    if (metadata.coverImage) {
+      const coverImageCID = await getObjectCID(
+        metadata.coverImage.id,
+        IPFS_BUCKET
+      );
+
+      if (coverImageCID) {
+        metadata.coverImage.src = `ipfs://${coverImageCID}`;
+      } else {
+        metadata.coverImage = undefined;
+      }
+    }
 
     // Create video record using the service
     const video = await createVideo({

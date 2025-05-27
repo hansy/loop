@@ -37,6 +37,11 @@ const VideoAccessSchema = z.object({
   dataToEncryptHash: z.string().optional(),
 });
 
+const VideoCoverImageSchema = z.object({
+  id: z.string(),
+  src: z.string(),
+});
+
 /**
  * Base schema for video metadata.
  */
@@ -51,7 +56,7 @@ const VideoMetadataBaseSchema = z.object({
   isNSFW: z.boolean(),
   price: VideoPriceSchema,
   sources: z.array(VideoSourceSchema).min(1, "Video must be uploaded first"),
-  coverImage: z.string().optional(),
+  coverImage: VideoCoverImageSchema.optional(),
   playbackAccess: VideoAccessSchema.optional(),
 });
 

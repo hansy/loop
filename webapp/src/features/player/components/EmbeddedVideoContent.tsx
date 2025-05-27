@@ -1,6 +1,6 @@
 "use client";
 
-import VideoPlayer from "@/components/video/VideoPlayer"; // Adjusted path assuming VideoPlayer is a general component
+import VideoPlayer from "@/components/video/VideoPlayer";
 import type { VideoMetadata } from "@/types";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -8,6 +8,7 @@ import {
   type AuthResultPayload,
 } from "@/features/player/hooks";
 import type { MediaSrc } from "@vidstack/react";
+import { getCoverImageSrc } from "@/utils/coverImage";
 
 interface EmbeddedVideoContentProps {
   metadata: VideoMetadata;
@@ -105,7 +106,7 @@ export default function EmbeddedVideoContent({
     <>
       <VideoPlayer
         src={videoSrc}
-        poster={metadata.coverImage}
+        poster={getCoverImageSrc(metadata.coverImage?.src)}
         title={metadata.title}
         isLoading={isPlayerLoading} // Reflects auth process primarily
         isAuthenticated={isAuthenticatedSession} // Based on successful auth with sessionSigs

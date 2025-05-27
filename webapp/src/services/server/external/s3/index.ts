@@ -13,8 +13,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AppError } from "@/services/server/api/error";
 import {
-  type BucketType,
-  type CredentialType,
+  type StorageType,
   type S3CredentialsMap,
   type SplitKeyResult,
   type CreateMultipartUploadParams,
@@ -28,12 +27,11 @@ import {
   type RemoveObjectParams,
 } from "./types";
 
-export const METADATA_BUCKET = process.env.S3_METADATA_BUCKET as string;
-export const VIDEO_BUCKET = process.env
-  .NEXT_PUBLIC_S3_VIDEO_UPLOAD_BUCKET as string;
+export const IPFS_BUCKET = process.env.NEXT_PUBLIC_S3_IPFS_BUCKET as string;
+export const STORJ_BUCKET = process.env.NEXT_PUBLIC_S3_STORJ_BUCKET as string;
 
 export const CREDS: S3CredentialsMap = {
-  uploadVideo: {
+  storj: {
     accessKeyId: String(process.env.S3_VIDEO_UPLOAD_ACCESS_KEY),
     secretAccessKey: String(process.env.S3_VIDEO_UPLOAD_SECRET_KEY),
     endpoint: String(process.env.S3_VIDEO_UPLOAD_ENDPOINT),
@@ -45,18 +43,29 @@ export const CREDS: S3CredentialsMap = {
   },
 };
 
+const getStorageType = (storageType?: StorageType): string => {
+  switch (storageType) {
+    case "storj":
+      return STORJ_BUCKET;
+    case "ipfs":
+      return IPFS_BUCKET;
+    default:
+      return STORJ_BUCKET;
+  }
+};
+
 /**
  * Initializes an S3 client with the specified credentials
  * @param credType - The type of credentials to use
  * @returns An initialized S3Client instance
  */
-export const initializeS3Client = (credType: CredentialType): S3Client => {
+export const initializeS3Client = (storageType: StorageType): S3Client => {
   return new S3Client({
-    endpoint: CREDS[credType].endpoint,
+    endpoint: CREDS[storageType].endpoint,
     region: "us-east-1",
     credentials: {
-      accessKeyId: CREDS[credType].accessKeyId,
-      secretAccessKey: CREDS[credType].secretAccessKey,
+      accessKeyId: CREDS[storageType].accessKeyId,
+      secretAccessKey: CREDS[storageType].secretAccessKey,
     },
   });
 };
@@ -108,18 +117,18 @@ export const isValidPart = (part: Part): boolean => {
 /**
  * Gets a presigned URL for uploading an object
  * @param s3 - The S3 client instance
- * @param bucketType - The type of bucket to use
+ * @param storageType - The type of bucket to use
  * @param key - The object key
  * @returns An object containing the HTTP method and presigned URL
  */
 export const getPresignedUrl = async (
   s3: S3Client,
-  bucketType: BucketType,
-  key: string
+  key: string,
+  storageType?: StorageType
 ): Promise<{ method: string; url: string }> => {
   const params = {
     Key: key,
-    Bucket: bucketType === "video" ? VIDEO_BUCKET : METADATA_BUCKET,
+    Bucket: getStorageType(storageType),
   };
 
   const command = new PutObjectCommand(params);
@@ -146,10 +155,11 @@ export const getPresignedUrl = async (
  */
 export const getObjectPresigned = async (
   s3: S3Client,
-  key: string
+  key: string,
+  storageType?: StorageType
 ): Promise<string> => {
   const params = {
-    Bucket: VIDEO_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: key,
   };
   const command = new GetObjectCommand(params);
@@ -175,10 +185,11 @@ export const getObjectPresigned = async (
  */
 export const createMultipartUpload = async (
   s3: S3Client,
-  params: CreateMultipartUploadParams
+  params: CreateMultipartUploadParams,
+  storageType?: StorageType
 ): Promise<CreateMultipartUploadResponse> => {
   const command = new CreateMultipartUploadCommand({
-    Bucket: VIDEO_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
     ContentType: params.contentType,
     Metadata: params.metadata,
@@ -206,11 +217,12 @@ export const createMultipartUpload = async (
  */
 export const getUploadPartSignedUrl = async (
   s3: S3Client,
-  params: UploadPartParams
+  params: UploadPartParams,
+  storageType?: StorageType
 ): Promise<UploadPartResponse> => {
   const expires = 800;
   const command = new UploadPartCommand({
-    Bucket: VIDEO_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
     UploadId: params.uploadId,
     PartNumber: params.partNumber,
@@ -239,11 +251,12 @@ export const getUploadPartSignedUrl = async (
  */
 export const listParts = async (
   s3: S3Client,
-  params: ListPartsParams
+  params: ListPartsParams,
+  storageType?: StorageType
 ): Promise<Part[]> => {
   const p = [...(params.parts || [])];
   const command = new ListPartsCommand({
-    Bucket: VIDEO_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
     UploadId: params.uploadId,
     PartNumberMarker: params.marker,
@@ -283,10 +296,11 @@ export const listParts = async (
  */
 export const completeMultipartUpload = async (
   s3: S3Client,
-  params: CompleteMultipartUploadParams
+  params: CompleteMultipartUploadParams,
+  storageType?: StorageType
 ): Promise<string> => {
   const command = new CompleteMultipartUploadCommand({
-    Bucket: VIDEO_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
     UploadId: params.uploadId,
     MultipartUpload: {
@@ -294,8 +308,31 @@ export const completeMultipartUpload = async (
     },
   });
 
+  // command.middlewareStack.add(
+  //   (next) => async (args) => {
+  //     // Check if request is incoming as middleware works both ways
+  //     const response = await next(args);
+  //     if (!response.response.statusCode) return response;
+
+  //     console.log("complete multipart upload response", response);
+
+  //     // Get cid from headers
+  //     const cid = response.response.headers["x-amz-meta-cid"];
+  //     console.log(cid);
+  //     return response;
+  //   },
+  //   {
+  //     step: "build",
+  //     name: "addCidToOutput",
+  //   }
+  // );
+
   try {
-    const { Location } = await s3.send(command);
+    const response = await s3.send(command);
+
+    console.log(response);
+    const { Location } = response;
+
     if (!Location) {
       throw new AppError(
         "No location returned from complete multipart upload",
@@ -322,10 +359,11 @@ export const completeMultipartUpload = async (
  */
 export const abortMultipartUpload = async (
   s3: S3Client,
-  params: AbortMultipartUploadParams
+  params: AbortMultipartUploadParams,
+  storageType?: StorageType
 ): Promise<void> => {
   const command = new AbortMultipartUploadCommand({
-    Bucket: VIDEO_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
     UploadId: params.uploadId,
   });
@@ -350,10 +388,11 @@ export const abortMultipartUpload = async (
  */
 export const putObject = async (
   s3: S3Client,
-  params: PutObjectParams
+  params: PutObjectParams,
+  storageType?: StorageType
 ): Promise<void> => {
   const command = new PutObjectCommand({
-    Bucket: params.bucket === "video" ? VIDEO_BUCKET : METADATA_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
     Body: params.body,
     ContentType: params.contentType,
@@ -379,10 +418,11 @@ export const putObject = async (
  */
 export const removeObject = async (
   s3: S3Client,
-  params: RemoveObjectParams
+  params: RemoveObjectParams,
+  storageType?: StorageType
 ): Promise<void> => {
   const command = new DeleteObjectCommand({
-    Bucket: params.bucket === "video" ? VIDEO_BUCKET : METADATA_BUCKET,
+    Bucket: getStorageType(storageType),
     Key: params.key,
   });
 

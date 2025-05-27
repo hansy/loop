@@ -1,5 +1,5 @@
 import type { VideoSource } from "@/types";
-import { VIDEO_BUCKET } from "./s3";
+import { STORJ_BUCKET } from "./s3";
 import { AppError } from "../api/error";
 
 const API_BASE = "https://livepeer.studio/api";
@@ -16,7 +16,7 @@ export const transcode = async (id: string, source: VideoSource) => {
         accessKeyId: ACCESS_KEY,
         secretAccessKey: ACCESS_SECRET,
       },
-      bucket: VIDEO_BUCKET,
+      bucket: STORJ_BUCKET,
       path: `/${source.id}`,
     },
     storage: {
@@ -26,7 +26,7 @@ export const transcode = async (id: string, source: VideoSource) => {
         accessKeyId: ACCESS_KEY,
         secretAccessKey: ACCESS_SECRET,
       },
-      bucket: VIDEO_BUCKET,
+      bucket: STORJ_BUCKET,
     },
     outputs: {
       hls: {

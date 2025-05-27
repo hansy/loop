@@ -3,8 +3,7 @@
 import React, { useState, useCallback } from "react";
 import Container from "@/components/layout/Container";
 import { useRouter } from "next/navigation";
-import { VideoUploader } from "@/components/upload/VideoUploader";
-// import CoverImageUploader from "@/components/upload/CoverImageUploader";
+import { FileUploader } from "@/components/upload/FileUploader";
 import VideoDetails from "@/components/upload/VideoDetails";
 import PrivacySettings, {
   PrivacySetting,
@@ -45,8 +44,8 @@ export default function UploadForm() {
     setErrors,
     validateAndFormatMetadata,
     setVisibility,
+    setCoverImage,
   } = useVideoMetadata();
-
   const handlePrivacyChange = (setting: PrivacySetting) => {
     setVisibility(setting.id);
   };
@@ -63,13 +62,23 @@ export default function UploadForm() {
     toast.error("Failed to upload video: " + error.message);
   }, []);
 
+  const handleCoverImageUploadSuccess = useCallback(
+    (key: string) => {
+      setCoverImage({ id: key, src: key });
+    },
+    [setCoverImage]
+  );
+
+  const handleCoverImageUploadError = useCallback((error: Error) => {
+    toast.error("Failed to upload cover image: " + error.message);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setIsSubmitting(true);
 
     try {
-      console.log("validating");
       const data = await validateAndFormatMetadata();
 
       await uploadVideo(data);
@@ -90,7 +99,6 @@ export default function UploadForm() {
             }
           });
           toast.error(error.message);
-          console.log("[UploadForm] Validation errors:", fieldErrors);
           setErrors(fieldErrors);
         } else {
           // Handle other errors
@@ -112,21 +120,37 @@ export default function UploadForm() {
           </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-24">
-            {/* Left Column - Video Upload and Cover Image */}
             <div className="bg-white rounded-lg shadow-sm p-6 space-y-8">
-              <VideoUploader
-                videoId={metadata.id}
+              <div>
+                <h2 className="text-base/7 font-semibold text-gray-900">
+                  Video
+                </h2>
+              </div>
+              <FileUploader
+                keyWithoutExtension={`${metadata.id}/video`}
+                uploaderText="Drop video here"
+                storageType="storj"
                 onSuccess={handleVideoUploadSuccess}
                 onError={handleVideoUploadError}
+                allowedFileTypes={["video/*"]}
+                maxFileSize={30 * 1024 * 1024 * 1024} // 30GB
               />
-              {/* <CoverImageUploader
-                onFileSelect={(url) => {
-                  setCoverImage(url);
-                }}
-                onFrameSelect={(url) => {
-                  setCoverImage(url);
-                }}
-              /> */}
+              <div>
+                <h2 className="text-base/7 font-semibold text-gray-900">
+                  Cover Image
+                </h2>
+                <div className="mt-4">
+                  <FileUploader
+                    keyWithoutExtension={`${metadata.id}/cover`}
+                    uploaderText="Drop cover image here"
+                    storageType="ipfs"
+                    onSuccess={handleCoverImageUploadSuccess}
+                    onError={handleCoverImageUploadError}
+                    allowedFileTypes={["image/*"]}
+                    maxFileSize={10 * 1024 * 1024} // 10MB
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Right Column - Metadata and Privacy Settings */}

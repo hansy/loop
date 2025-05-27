@@ -1,14 +1,9 @@
-import { Part } from "@aws-sdk/client-s3";
+import { BucketType, Part } from "@aws-sdk/client-s3";
 
 /**
- * Supported S3 bucket types for operations
+ * Supported S3 storage types for operations
  */
-export type BucketType = "video" | "metadata";
-
-/**
- * Supported S3 credential types for client initialization
- */
-export type CredentialType = "uploadVideo" | "ipfs";
+export type StorageType = "storj" | "ipfs";
 
 /**
  * S3 client credentials configuration
@@ -23,7 +18,7 @@ export interface S3Credentials {
  * S3 client credentials map
  */
 export interface S3CredentialsMap {
-  uploadVideo: S3Credentials;
+  storj: S3Credentials;
   ipfs: S3Credentials;
 }
 
